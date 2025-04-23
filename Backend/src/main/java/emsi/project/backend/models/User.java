@@ -2,9 +2,6 @@ package emsi.project.backend.models;
 
 import emsi.project.backend.enums.UserRole;
 import jakarta.persistence.*;
-import lombok.*;
-import org.hibernate.proxy.HibernateProxy;
-
 import java.util.Objects;
 
 @Entity
@@ -12,10 +9,13 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
+
     @Column(nullable = false)
     private String username;
+
     @Column(nullable = false)
     private String password;
+
     private String email;
     private String phoneNumber;
     private String address;
@@ -23,8 +23,13 @@ public class User {
     private String lastName;
     private String dateOfBirth;
     private String pharmacienLicense;
+
     @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
     private UserRole role;
+
+    public User() {
+    }
 
     public User(Long id, String username, String password, String email, String phoneNumber, String address, String firstName, String lastName, String dateOfBirth, String pharmacienLicense, UserRole role) {
         this.id = id;
@@ -38,9 +43,6 @@ public class User {
         this.dateOfBirth = dateOfBirth;
         this.pharmacienLicense = pharmacienLicense;
         this.role = role;
-    }
-
-    public User() {
     }
 
     public Long getId() {
@@ -129,5 +131,21 @@ public class User {
 
     public void setRole(UserRole role) {
         this.role = role;
+    }
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "id=" + id +
+                ", username='" + username + '\'' +
+                  ", email='" + email + '\'' +
+                ", phoneNumber='" + phoneNumber + '\'' +
+                ", address='" + address + '\'' +
+                ", firstName='" + firstName + '\'' +
+                ", lastName='" + lastName + '\'' +
+                ", dateOfBirth='" + dateOfBirth + '\'' +
+                ", pharmacienLicense='" + pharmacienLicense + '\'' +
+                ", role=" + role +
+                '}';
     }
 }
