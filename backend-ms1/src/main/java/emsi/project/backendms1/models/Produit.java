@@ -24,6 +24,7 @@ public class Produit {
     @Column(nullable = false)
     private String nomMedicament;
 
+    @Column(nullable = true)
     @OneToMany(mappedBy = "produit", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<LotDeStock> lotDeStocks = new ArrayList<>();
 

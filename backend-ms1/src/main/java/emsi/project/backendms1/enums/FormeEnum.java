@@ -6,5 +6,5 @@ public enum FormeEnum {
     SYRUP,
     INJECTION,
     CREAM,
-    POWDER
+    POWDER,SACHET
 }

@@ -25,7 +25,6 @@ public class StockService {
     @Autowired
     private ProduitService productService;
 
-    @Transactional
     public LotDeStock addStock(Long productId, String numeroLot, LocalDate dateExpiration,
                                int quantite, BigDecimal prixAchatHT) {
         // Validation des paramètres

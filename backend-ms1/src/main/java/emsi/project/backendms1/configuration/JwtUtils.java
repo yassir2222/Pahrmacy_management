@@ -32,7 +32,8 @@ public class JwtUtils {
         return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(subject)
-                .setIssuedAt(new Date(System.currentTimeMillis() + expirationTime))
+                .setExpiration(new Date(System.currentTimeMillis() + expirationTime))
+                .setIssuedAt(new Date())
                 .signWith(getSignKey(), SignatureAlgorithm.HS256).compact();
     }
 
@@ -47,11 +48,19 @@ public class JwtUtils {
     }
 
     private boolean isTokenExpired(String token) {
-        return extractExpirationDate(token).before(new Date());
+        Date expirationDate = extractExpirationDate(token);
+        //expirationDate.before(new Date())
+        return  expirationDate.before(new Date()) ;
     }
 
+
     private Date extractExpirationDate(String token) {
-        return extractClaim(token, Claims::getExpiration);
+        try {
+            return extractClaim(token, Claims::getExpiration);
+        } catch (Exception e) {
+            System.out.println(e);
+            return null;
+        }
     }
 
     public String extractUsername(String token) {
@@ -59,13 +68,24 @@ public class JwtUtils {
     }
 
     private <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
-        final Claims claims = extractAllClaims(token);
+        Claims claims = extractAllClaims(token);
+        if (claims == null) {
+            System.err.println("Claims are null for token");
+            return null;
+        }
         return claimsResolver.apply(claims);
     }
 
     private Claims extractAllClaims(String token) {
-        return Jwts.parser()
-                .setSigningKey(getSignKey())
-                .parseClaimsJws(token).getBody();
+        try {
+            return Jwts.parserBuilder()
+                    .setSigningKey(getSignKey())
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+        } catch (Exception e) {
+            System.err.println("Failed to parse JWT token: " + e.getMessage());
+            return null;
+        }
     }
 }

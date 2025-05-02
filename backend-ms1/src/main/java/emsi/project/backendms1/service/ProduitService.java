@@ -5,7 +5,6 @@ import emsi.project.backendms1.models.Produit;
 import emsi.project.backendms1.repository.LotDeStockRepo;
 import emsi.project.backendms1.repository.ProduitRepo;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -24,16 +23,13 @@ public class ProduitService {
         return productRepository.findAll();
     }
 
-    @Transactional
+
     public Produit createProduct(Produit product) {
-        if (productRepository.existsById(product.getId())) {
-            throw new RuntimeException("Produit avec l'ID " + product.getId() + " existe déjà");
-        }
+
         product.setQuantiteTotaleEnStock(0);
         return productRepository.save(product);
     }
 
-    @Transactional
     public Produit updateProduct(Long id, Produit detailsProduit) {
 
         Produit produitExistant = productRepository.findById(id)
@@ -52,7 +48,6 @@ public class ProduitService {
         return productRepository.save(produitExistant);
     }
 
-    @Transactional
     public void deleteProduct(Long id) {
         Produit product = productRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Produit non trouvé avec l'id: " + id));
@@ -65,7 +60,6 @@ public class ProduitService {
         productRepository.delete(product);
     }
 
-    @Transactional
     public void updateTotalStock(Long productId) {
         Produit product = productRepository.findById(productId)
                 .orElseThrow(() -> new EntityNotFoundException("Produit non trouvé avec l'id: " + productId));
