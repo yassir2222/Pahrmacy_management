@@ -1,0 +1,219 @@
+/* Google Font Link */
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
+/* Boxicons */
+@import url("https://unpkg.com/boxicons@2.1.1/css/boxicons.min.css");
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Poppins", sans-serif;
+}
+
+:host {
+  /* PharmaGest Theme Colors */
+  --sidebar-bg-color: #ffffff;
+  --header-bg-color: #2563eb; /* Blue-600 */
+  --header-text-color: #ffffff;
+  --header-icon-color: #ffffff;
+  --profile-bg-color: #ffffff;
+  --profile-border-color: #e5e7eb; /* Gray-200 */
+  --profile-name-color: #1f2937; /* Gray-800 */
+  --profile-job-color: #6b7280; /* Gray-500 */
+  --nav-text-color: #374151; /* Gray-700 */
+  --nav-icon-color: #4b5563; /* Gray-600 */
+  --active-bg-color: #dbeafe; /* Blue-100 */
+  --active-text-color: #1d4ed8; /* Blue-700 */
+  --active-icon-color: #1d4ed8;
+  --hover-bg-color: #eff6ff; /* Blue-50 */
+  --footer-border-color: #e5e7eb; /* Gray-200 */
+  --badge-bg-color: #ef4444; /* Red-500 */
+  --badge-text-color: #ffffff;
+}
+
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 100vh;
+  width: 260px;
+  background: var(--sidebar-bg-color);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--profile-border-color); /* Use profile border color for main border */
+}
+
+/* Header Section */
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  padding: 15px 20px;
+  background-color: var(--header-bg-color);
+  min-height: 65px; /* Match topbar height potentially */
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 35px;
+  height: 35px;
+  border-radius: 8px; /* Slightly rounded square */
+  background-color: rgba(255, 255, 255, 0.2); /* Transparent white */
+  margin-right: 12px;
+}
+
+.logo-icon {
+  font-size: 22px;
+  color: var(--header-icon-color);
+}
+
+.logo_name {
+  color: var(--header-text-color);
+  font-size: 20px;
+  font-weight: 600;
+}
+
+/* Profile Section */
+.profile-section {
+  padding: 15px 20px;
+  background-color: var(--profile-bg-color);
+  border-bottom: 1px solid var(--profile-border-color);
+}
+
+.profile-content {
+  display: flex;
+  align-items: center;
+}
+
+.profile-avatar {
+  height: 40px;
+  width: 40px;
+  object-fit: cover;
+  border-radius: 50%;
+  margin-right: 12px;
+}
+
+.profile-section .name_job {
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-section .name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--profile-name-color);
+}
+
+.profile-section .job {
+  font-size: 12px;
+  color: var(--profile-job-color);
+}
+
+/* Navigation List */
+.nav-list {
+  flex-grow: 1;
+  padding: 15px 15px 0 15px; /* Add padding */
+  overflow-y: auto;
+  overflow-x: hidden;
+  list-style: none;
+}
+.nav-list::-webkit-scrollbar {
+  display: none;
+}
+.nav-list {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.nav-list li,
+.footer-list li {
+  position: relative;
+  margin: 4px 0;
+  list-style: none;
+}
+
+.nav-list li a,
+.footer-list li a {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  width: 100%;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: transparent;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.nav-list li a .links_name,
+.footer-list li a .links_name {
+  color: var(--nav-text-color);
+  font-size: 15px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: color 0.2s ease;
+  flex-grow: 1;
+}
+
+.nav-list li a i,
+.footer-list li a i {
+  color: var(--nav-icon-color);
+  min-width: 35px;
+  font-size: 20px;
+  text-align: center;
+  margin-right: 10px;
+  transition: color 0.2s ease;
+}
+
+/* Hover State */
+.nav-list li a:hover,
+.footer-list li a:hover {
+  background: var(--hover-bg-color);
+}
+
+/* Active State */
+.nav-list li a.active,
+.footer-list li a.active {
+  background: var(--active-bg-color);
+}
+.nav-list li a.active .links_name,
+.footer-list li a.active .links_name {
+  color: var(--active-text-color);
+  font-weight: 600;
+}
+.nav-list li a.active i,
+.footer-list li a.active i {
+  color: var(--active-icon-color);
+}
+
+/* Badge */
+.nav-list li a .badge {
+  margin-left: auto;
+  background-color: var(--badge-bg-color);
+  color: var(--badge-text-color);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 7px;
+  border-radius: 12px;
+  line-height: 1;
+}
+
+/* Footer Section */
+.sidebar-footer {
+  margin-top: auto; /* Push to bottom */
+  padding: 10px 15px 15px 15px; /* Padding around footer */
+  border-top: 1px solid var(--footer-border-color);
+}
+.footer-list {
+  padding-left: 0;
+  list-style: none;
+  margin-bottom: 0;
+}
+
+/* Remove/Hide Old Styles */
+.sidebar .logo-details,
+.nav-section-header,
+:host .profile-border-color /* Hide if defined previously outside :host */ {
+  display: none;
+}

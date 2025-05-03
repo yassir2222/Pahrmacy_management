@@ -1,0 +1,17 @@
+<div class="topbar">
+  <div class="search-container">
+    <i class="bx bx-search search-icon"></i>
+    <input type="text" placeholder="Rechercher..." (input)="onSearch($event)" />
+  </div>
+  <div class="actions-container">
+    <i class="bx bx-bell notification-icon" (click)="onNotificationClick()"></i>
+    <i class="bx bx-help-circle help-icon" (click)="onHelpClick()"></i>
+    <div class="user-profile" (click)="onProfileClick()">
+      <img
+        [src]="userProfileImageUrl || 'assets/images/avatar-placeholder.png'"
+        alt="User Profile"
+        class="profile-avatar"
+      />
+    </div>
+  </div>
+</div>

@@ -1,26 +1,23 @@
-import { Component, ViewChild } from '@angular/core';
-import { SidebarModule } from 'primeng/sidebar';
-import { ButtonModule } from 'primeng/button';
-import { RippleModule } from 'primeng/ripple';
-import { AvatarModule } from 'primeng/avatar';
-import { StyleClassModule } from 'primeng/styleclass';
-import { Sidebar } from 'primeng/sidebar';
+import { Component, OnInit, ElementRef } from '@angular/core';
+
 @Component({
   selector: 'app-side-bar',
-  imports: [SidebarModule, ButtonModule, RippleModule, AvatarModule, StyleClassModule],
-  standalone: true,
+  standalone: true, // Assuming standalone
+  imports: [
+    /* Add CommonModule if using *ngIf/*ngFor, RouterModule for routerLink */
+  ],
   templateUrl: './side-bar.component.html',
-  styleUrl: './side-bar.component.css'
+  styleUrls: ['./side-bar.component.css'],
 })
-export class SideBarComponent {
-    // Boolean flag to control the sidebar visibility
-    sidebarVisible: boolean = false;
+export class SideBarComponent implements OnInit {
+  userProfileImageUrl: string | null = 'assets/images/avatar-placeholder.png'; // Default or null
 
-    // You can add methods here if needed, e.g., for navigation logic
-    onLinkClick() {
-      console.log('Sidebar link clicked!');
-      // Potentially close the sidebar after clicking a link
-      // this.sidebarVisible = false;
-    }
-  
+  constructor(/* Inject services if needed */) {}
+
+  ngOnInit(): void {
+    // Initialization logic can go here if necessary
+    // Removed sidebar toggle logic
+  }
+
+  // Removed menuBtnChange method
 }

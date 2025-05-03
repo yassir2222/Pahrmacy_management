@@ -1,0 +1,109 @@
+/* Import Boxicons if not done globally */
+/* @import url('https://unpkg.com/boxicons@2.1.1/css/boxicons.min.css'); */
+
+:host {
+  --topbar-bg-color: #ffffff;
+  --topbar-border-color: #e5e7eb; /* Tailwind Gray 200 */
+  --topbar-icon-color: #6b7280; /* Tailwind Gray 500 */
+  --search-bg-color: #f9fafb; /* Tailwind Gray 50 */
+  --search-border-color: #d1d5db; /* Tailwind Gray 300 */
+  --search-placeholder-color: #9ca3af; /* Tailwind Gray 400 */
+  --search-icon-color: #9ca3af;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between; /* Pushes search left, actions right */
+  align-items: center;
+  height: 65px;
+  padding: 0 25px;
+  background-color: var(--topbar-bg-color);
+  border-bottom: 1px solid var(--topbar-border-color);
+  position: fixed;
+  top: 0;
+  /* Assuming sidebar width is still 260px */
+  left: 260px;
+  width: calc(100% - 260px);
+  z-index: 98;
+  transition: none;
+  font-family: "Poppins", sans-serif;
+}
+
+/* Search Bar Styles */
+.search-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-container .search-icon {
+  position: absolute;
+  left: 12px;
+  font-size: 18px;
+  color: var(--search-icon-color);
+  pointer-events: none;
+}
+
+.search-container input {
+  padding: 8px 12px 8px 38px;
+  border-radius: 8px;
+  border: 1px solid var(--search-border-color);
+  background-color: var(--search-bg-color);
+  min-width: 300px; /* Adjust width */
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.search-container input:focus {
+  border-color: #a5b4fc;
+}
+
+.search-container input::placeholder {
+  color: var(--search-placeholder-color);
+}
+
+/* Actions Container Styles */
+.actions-container {
+  display: flex;
+  align-items: center;
+  gap: 25px; /* Space between icons/profile */
+}
+
+.notification-icon,
+.help-icon {
+  font-size: 22px;
+  color: var(--topbar-icon-color);
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+.notification-icon:hover,
+.help-icon:hover {
+  color: #374151; /* Darker on hover */
+}
+
+/* User Profile Styles */
+.user-profile {
+  display: flex; /* Needed for alignment if other elements were present */
+  align-items: center;
+  cursor: pointer;
+}
+
+.user-profile .profile-avatar {
+  width: 36px; /* Slightly larger */
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block; /* Ensures no extra space */
+}
+
+/* Remove unused styles */
+.topbar-left,
+.menu-toggle-icon,
+.page-title,
+.user-profile .user-name,
+.user-profile .profile-icon,
+:host-context(.sidebar-open) .topbar,
+body.sidebar-open .topbar {
+  display: none;
+}

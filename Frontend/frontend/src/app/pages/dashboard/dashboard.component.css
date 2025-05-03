@@ -1,0 +1,150 @@
+@import url("https://unpkg.com/boxicons@2.1.1/css/boxicons.min.css");
+
+:host {
+  display: block;
+  /* Adjust padding based on whether topbar/sidebar are handled here or in app.component */
+  /* Example if this component is the routed content inside app.component */
+  padding: 25px;
+  /* If topbar/sidebar are included directly in THIS component, you might need: */
+  /* position: relative; */
+  /* padding-top: calc(65px + 25px); Topbar height + desired padding */
+  /* padding-left: calc(260px + 25px); Sidebar width + desired padding */
+  /* width: calc(100% - 260px); */
+  /* min-height: calc(100vh - 65px); */
+
+  background-color: #f9fafb; /* Light gray background */
+  font-family: "Poppins", sans-serif;
+}
+
+.dashboard-container {
+  margin-top: 50px;
+  margin-left: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 25px; /* Space between rows */
+}
+
+/* Header */
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px; /* Less margin since rows have gap */
+}
+
+.dashboard-header h1 {
+  margin: 0 0 5px 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #111827; /* Gray-900 */
+}
+
+.dashboard-header p {
+  margin: 0;
+  font-size: 14px;
+  color: #6b7280; /* Gray-500 */
+}
+
+.btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex; /* Align icon and text */
+  align-items: center;
+  gap: 6px;
+  transition: background-color 0.2s ease;
+}
+
+.btn-primary {
+  background-color: #2563eb; /* Blue-600 */
+  color: #ffffff;
+}
+.btn-primary:hover {
+  background-color: #1d4ed8; /* Blue-700 */
+}
+.btn-primary i {
+  font-size: 18px;
+}
+
+/* Grids */
+.stats-grid,
+.charts-grid,
+.bottom-grid {
+  display: grid;
+  gap: 20px; /* Space between items in the grid */
+}
+
+.stats-grid {
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(240px, 1fr)
+  ); /* Responsive columns */
+}
+
+.charts-grid,
+.bottom-grid {
+  /* Default to 1 column on smaller screens, then 2 */
+  grid-template-columns: 1fr;
+  align-items: start; /* Align items to the top */
+}
+
+/* Apply 2 columns for charts/bottom grid on larger screens */
+@media (min-width: 992px) {
+  /* Adjust breakpoint as needed (e.g., 768px, 1200px) */
+  .charts-grid,
+  .bottom-grid {
+    grid-template-columns: 1fr 1fr;
+    /* Or use: grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); */
+  }
+}
+
+/* Chart Card Placeholder */
+.chart-card {
+  background-color: #ffffff;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb; /* Gray-200 */
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #f3f4f6; /* Gray-100 */
+  flex-wrap: wrap; /* Allow wrapping on small screens */
+  gap: 10px;
+}
+.chart-header h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937; /* Gray-800 */
+  white-space: nowrap;
+}
+.chart-header select {
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db; /* Gray-300 */
+  font-size: 13px;
+  background-color: #fff;
+}
+
+.chart-placeholder {
+  flex-grow: 1;
+  min-height: 250px; /* Example height */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af; /* Gray-400 */
+  font-size: 14px;
+  background-color: #f9fafb; /* Gray-50 */
+  border-radius: 8px;
+}

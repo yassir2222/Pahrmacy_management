@@ -1,0 +1,50 @@
+<div class="recent-alerts-card">
+  <div class="card-header">
+    <h4>Alertes récentes</h4>
+    <a
+      href="#"
+      (click)="$event.preventDefault(); markAllAsRead()"
+      class="mark-all-link"
+      >Tout marquer comme vu</a
+    >
+  </div>
+
+  <div class="alerts-list" *ngIf="alerts.length > 0; else noAlerts">
+    <div
+      *ngFor="let alert of alerts"
+      class="alert-item"
+      [ngClass]="{
+        'alert-critical': alert.type === 'critical',
+        'alert-warning': alert.type === 'warning',
+        'alert-info': alert.type === 'info'
+      }"
+    >
+      <i class="bx {{ alert.icon }} alert-icon"></i>
+      <div class="alert-content">
+        <span class="alert-title">{{ alert.title }}</span>
+        <p class="alert-description">{{ alert.description }}</p>
+      </div>
+      <div class="alert-actions">
+        <button
+          *ngIf="alert.actionText"
+          class="btn btn-action {{ alert.actionClass }}"
+          (click)="performAction(alert)"
+        >
+          {{ alert.actionText }}
+        </button>
+        <button class="btn btn-mark-read" (click)="markAsRead(alert.id)">
+          Marquer comme vu
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <ng-template #noAlerts>
+    <div class="no-alerts">Aucune alerte récente.</div>
+  </ng-template>
+
+  <div class="card-footer">
+    <a routerLink="/alerts" class="view-all-link">Voir toutes les alertes</a>
+    <!-- Assuming /alerts is the route -->
+  </div>
+</div>

@@ -1,0 +1,81 @@
+@import url("https://unpkg.com/boxicons@2.1.1/css/boxicons.min.css");
+
+:host {
+  display: block;
+  font-family: "Poppins", sans-serif; /* Or your project's font */
+}
+
+.stat-card {
+  background-color: #ffffff; /* Default, overridden by input */
+  border-radius: 10px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 15px; /* Space between icon and text */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb; /* Tailwind Gray-200 */
+  min-width: 220px; /* Adjust as needed */
+}
+
+.card-icon-wrapper {
+  min-width: 45px; /* Fixed width for the square */
+  height: 45px; /* Fixed height for the square */
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Background color is set by input */
+}
+
+.card-icon {
+  font-size: 24px; /* Adjust icon size */
+  /* Icon color is set by input */
+}
+
+.card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px; /* Small gap between title and value row */
+}
+
+.card-title {
+  font-size: 13px;
+  color: #6b7280; /* Tailwind Gray-500 - Consider making this an input too if needed */
+  font-weight: 500;
+  white-space: nowrap; /* Prevent title wrapping */
+}
+
+.card-value-row {
+  display: flex;
+  align-items: baseline; /* Aligns the bottom of the value and percentage */
+  gap: 8px;
+}
+
+.card-value {
+  font-size: 22px;
+  font-weight: 600;
+  color: #1f2937; /* Tailwind Gray-800 - Default, overridden by input */
+  line-height: 1.2; /* Adjust for better vertical alignment */
+}
+
+.card-percentage {
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+}
+
+.card-percentage i {
+  font-size: 16px; /* Adjust arrow size */
+  margin-right: 2px; /* Small space between arrow and number */
+}
+
+/* Positive percentage */
+.card-percentage.positive {
+  color: #10b981; /* Tailwind Emerald-500 */
+}
+
+/* Negative percentage */
+.card-percentage.negative {
+  color: #ef4444; /* Tailwind Red-500 */
+}
