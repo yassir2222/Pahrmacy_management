@@ -4,14 +4,124 @@
     <input type="text" placeholder="Rechercher..." (input)="onSearch($event)" />
   </div>
   <div class="actions-container">
-    <i class="bx bx-bell notification-icon" (click)="onNotificationClick()"></i>
-    <i class="bx bx-help-circle help-icon" (click)="onHelpClick()"></i>
-    <div class="user-profile" (click)="onProfileClick()">
-      <img
-        [src]="userProfileImageUrl || 'assets/images/avatar-placeholder.png'"
-        alt="User Profile"
-        class="profile-avatar"
-      />
-    </div>
+    <i
+      class="bx bx-bell notification-icon"
+      (click)="onNotificationClick($event)"
+    ></i>
+    <i class="bx bx-help-circle help-icon" (click)="onHelpClick($event)"></i>
+    <div class="user-profile" (click)="onProfileClick()"></div>
   </div>
 </div>
+
+<!-- Panel des notifications -->
+<p-overlayPanel
+  #notificationPanel
+  [showCloseIcon]="true"
+  [style]="{ width: '400px' }"
+>
+  <ng-template pTemplate>
+    <div class="notification-panel">
+      <div class="notification-header">
+        <h3>Notifications</h3>
+        <p-button
+          *ngIf="alertes.length > 0"
+          label="Tout marquer comme lu"
+          icon="pi pi-check"
+          styleClass="p-button-text p-button-sm"
+          (click)="marquerToutesCommeLues()"
+        >
+        </p-button>
+      </div>
+
+      <p-divider></p-divider>
+
+      <div class="notification-list">
+        <div *ngIf="alertes.length === 0" class="no-notifications">
+          <i class="pi pi-check-circle"></i>
+          <p>Aucune notification pour le moment</p>
+        </div>
+
+        <div *ngFor="let alerte of alertes" class="notification-item">
+          <div class="notification-content">
+            <div class="notification-icon">
+              <i
+                [class]="getIconClass(alerte.type)"
+                [ngClass]="getBadgeClass(alerte.severity)"
+              ></i>
+            </div>
+            <div class="notification-details">
+              <div class="notification-title">{{ alerte.titre }}</div>
+              <div class="notification-description">
+                {{ alerte.description }}
+              </div>
+              <div class="notification-value">{{ formatValue(alerte) }}</div>
+            </div>
+            <div class="notification-actions">
+              <button
+                pButton
+                icon="pi pi-check"
+                class="p-button-rounded p-button-text"
+                (click)="marquerCommeLue(alerte.id, $event)"
+                pTooltip="Marquer comme lu"
+              ></button>
+              <button
+                *ngIf="alerte.lien"
+                pButton
+                icon="pi pi-arrow-right"
+                class="p-button-rounded p-button-text"
+                [routerLink]="alerte.lien"
+                pTooltip="Voir détails"
+              ></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-template>
+</p-overlayPanel>
+
+<!-- Panel d'aide contextuelle -->
+<p-overlayPanel
+  #helpPanel
+  [showCloseIcon]="true"
+  [style]="{ width: '450px' }"
+  [dismissable]="true"
+  [showTransitionOptions]="'150ms'"
+  [hideTransitionOptions]="'150ms'"
+>
+  <ng-template pTemplate>
+    <div class="help-panel">
+      <div class="help-header">
+        <h3>Centre d'aide</h3>
+        <p>Bienvenue dans l'aide de l'application de gestion pharmaceutique</p>
+      </div>
+
+      <p-divider></p-divider>
+
+      <div class="help-content">
+        <div *ngFor="let section of helpSections" class="help-section">
+          <div class="help-section-header">
+            <i [class]="section.icon" class="section-icon"></i>
+            <h4>{{ section.title }}</h4>
+          </div>
+          <p>{{ section.content }}</p>
+          <p-divider></p-divider>
+        </div>
+
+        <div class="help-footer">
+          <p>Besoin d'assistance supplémentaire ?</p>
+          <p-button
+            label="Contacter le support"
+            icon="pi pi-envelope"
+            styleClass="p-button-sm"
+            (click)="contacterSupport()"
+          >
+          </p-button>
+        </div>
+      </div>
+    </div>
+  </ng-template>
+</p-overlayPanel>
+
+<!-- Toast pour les messages -->
+<p-toast></p-toast>

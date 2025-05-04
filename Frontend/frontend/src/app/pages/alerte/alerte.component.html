@@ -1,0 +1,194 @@
+<div class="grid">
+  <div class="col-12">
+    <p-toast></p-toast>
+
+    <!-- Spinner pendant le chargement -->
+    <div
+      *ngIf="loading"
+      class="flex justify-content-center align-items-center"
+      style="height: 400px"
+    >
+      <p-progressSpinner
+        strokeWidth="4"
+        [style]="{ width: '50px', height: '50px' }"
+      ></p-progressSpinner>
+    </div>
+
+    <div *ngIf="!loading" class="grid">
+      <!-- Section des produits en rupture de stock -->
+      <div class="col-12 alert-container">
+        <p-card
+          header="Produits en rupture de stock"
+          [style]="{ borderTop: '5px solid #B22222' }"
+        >
+          <p-badge
+            *ngIf="produitsRupture.length > 0"
+            value="{{ produitsRupture.length }}"
+            severity="danger"
+            styleClass="mb-2"
+          ></p-badge>
+
+          <div
+            *ngIf="produitsRupture.length === 0"
+            class="py-3 text-center text-500"
+          >
+            Aucun produit en rupture de stock.
+          </div>
+
+          <p-table
+            *ngIf="produitsRupture.length > 0"
+            [value]="produitsRupture"
+            [tableStyle]="{ 'min-width': '50rem' }"
+            [paginator]="produitsRupture.length > 10"
+            [rows]="10"
+            styleClass="p-datatable-sm"
+          >
+            <ng-template pTemplate="header">
+              <tr>
+                <th>Nom du médicament</th>
+                <th>Code EAN</th>
+                <th style="width: 15%">Stock</th>
+                <th style="width: 15%">Seuil</th>
+                <th style="width: 15%">Statut</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-produit>
+              <tr>
+                <td>{{ produit.nomMedicament }}</td>
+                <td>{{ produit.codeEAN }}</td>
+                <td>{{ produit.quantiteTotaleEnStock }} unités</td>
+                <td>{{ produit.seuilStock }} unités</td>
+                <td><p-badge value="RUPTURE" severity="danger"></p-badge></td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </p-card>
+      </div>
+
+      <!-- Section des produits sous le seuil de stock -->
+      <div class="col-12 alert-container">
+        <p-card
+          header="Produits sous le seuil minimal"
+          [style]="{ borderTop: '5px solid #8B8000' }"
+        >
+          <p-badge
+            *ngIf="produitsSousSeuil.length > 0"
+            value="{{ produitsSousSeuil.length }}"
+            severity="warn"
+            styleClass="mb-2"
+          ></p-badge>
+
+          <div
+            *ngIf="produitsSousSeuil.length === 0"
+            class="py-3 text-center text-500"
+          >
+            Aucun produit sous le seuil minimal.
+          </div>
+
+          <p-table
+            *ngIf="produitsSousSeuil.length > 0"
+            [value]="produitsSousSeuil"
+            [tableStyle]="{ 'min-width': '50rem' }"
+            [paginator]="produitsSousSeuil.length > 10"
+            [rows]="10"
+            styleClass="p-datatable-sm"
+          >
+            <ng-template pTemplate="header">
+              <tr>
+                <th>Nom du médicament</th>
+                <th>Code EAN</th>
+                <th style="width: 15%">Stock actuel</th>
+                <th style="width: 15%">Seuil</th>
+                <th style="width: 20%">Niveau</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-produit>
+              <tr>
+                <td>{{ produit.nomMedicament }}</td>
+                <td>{{ produit.codeEAN }}</td>
+                <td>{{ produit.quantiteTotaleEnStock }} unités</td>
+                <td>{{ produit.seuilStock }} unités</td>
+                <td>
+                  <div class="flex align-items-center">
+                    <div
+                      class="surface-300 border-round overflow-hidden w-10rem mr-2"
+                      style="height: 0.5rem"
+                    >
+                      <div
+                        class="bg-yellow-500 h-full"
+                        [style]="{
+                          width: calculerPourcentageStock(produit) + '%'
+                        }"
+                      ></div>
+                    </div>
+                    <span class="text-yellow-500 font-medium"
+                      >{{ calculerPourcentageStock(produit) }}%</span
+                    >
+                  </div>
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </p-card>
+      </div>
+
+      <!-- Section des lots proches de la date d'expiration -->
+      <div class="col-12 alert-container">
+        <p-card
+          header="Lots proches de la date d'expiration"
+          [style]="{ borderTop: '5px solid #0066CC' }"
+        >
+          <p-badge
+            *ngIf="lotsExpirants.length > 0"
+            value="{{ lotsExpirants.length }}"
+            severity="info"
+            styleClass="mb-2"
+          ></p-badge>
+
+          <div
+            *ngIf="lotsExpirants.length === 0"
+            class="py-3 text-center text-500"
+          >
+            Aucun lot expirant dans les 30 prochains jours.
+          </div>
+
+          <p-table
+            *ngIf="lotsExpirants.length > 0"
+            [value]="lotsExpirants"
+            [tableStyle]="{ 'min-width': '50rem' }"
+            [paginator]="lotsExpirants.length > 10"
+            [rows]="10"
+            styleClass="p-datatable-sm"
+          >
+            <ng-template pTemplate="header">
+              <tr>
+                <th>Numéro de lot</th>
+                <th>Produit</th>
+                <th style="width: 15%">Quantité</th>
+                <th style="width: 15%">Date d'expiration</th>
+                <th style="width: 15%">Jours restants</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-lot>
+              <tr>
+                <td>{{ lot.numeroLot }}</td>
+                <td>{{ lot.produit?.nomMedicament }}</td>
+                <td>{{ lot.quantiteActuelle }} unités</td>
+                <td>{{ lot.dateExpiration | date : "dd/MM/yyyy" }}</td>
+                <td>
+                  <p-badge
+                    [value]="
+                      calculerJoursAvantExpiration(lot.dateExpiration) +
+                      ' jours'
+                    "
+                    severity="info"
+                  ></p-badge>
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </p-card>
+      </div>
+    </div>
+  </div>
+</div>

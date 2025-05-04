@@ -1,0 +1,218 @@
+<p-toast></p-toast>
+
+<div class="grid p-fluid">
+  <!-- Section Sélection Produit et Détails -->
+  <div class="col-12 md:col-4">
+    <p-panel header="Sélection et Détails Produit">
+      <div class="field">
+        <label for="produit">Choisir un produit</label>
+        <p-dropdown
+          id="produit"
+          [options]="produits"
+          formControlName="produitId"
+          optionLabel="nomMedicament"
+          optionValue="id"
+          placeholder="Sélectionner un produit"
+          [filter]="true"
+          filterBy="nomMedicament"
+          [showClear]="true"
+          [style]="{ width: '100%' }"
+          #produitDropdown
+          [loading]="isLoadingProduits"
+        >
+        </p-dropdown>
+        <!-- Afficher l'erreur si le champ est touché et invalide -->
+        <small
+          class="p-error"
+          *ngIf="mouvementForm.get('produitId')?.touched && mouvementForm.get('produitId')?.errors?.['required']"
+        >
+          Le produit est requis.
+        </small>
+      </div>
+
+      <!-- Détails du Produit Sélectionné -->
+      <p-card
+        *ngIf="selectedProduit"
+        header="Détails du Produit"
+        styleClass="mt-4"
+      >
+        <div class="field">
+          <strong>Code EAN:</strong> {{ selectedProduit.codeEAN || "N/A" }}
+        </div>
+        <div class="field">
+          <strong>Dosage:</strong> {{ selectedProduit.dosage || "N/A" }}
+        </div>
+        <div class="field">
+          <strong>Prix Achat HT:</strong>
+          {{
+            (selectedProduit.prixAchatHT
+              | currency : "EUR" : "symbol" : "1.2-2" : "fr") || "N/A"
+          }}
+        </div>
+        <div class="field">
+          <strong>Prix Vente TTC:</strong>
+          {{
+            (selectedProduit.prixVenteTTC
+              | currency : "EUR" : "symbol" : "1.2-2" : "fr") || "N/A"
+          }}
+        </div>
+        <div class="field">
+          <strong>Quantité Totale en Stock:</strong>
+          {{ selectedProduit.quantiteTotaleEnStock ?? "Calcul..." }}
+        </div>
+        <div class="field">
+          <strong>Seuil de Stock Bas:</strong>
+          {{ selectedProduit.seuilStock ?? "N/D" }}
+        </div>
+      </p-card>
+      <p *ngIf="!selectedProduit && produitDropdown.value">
+        Chargement des détails...
+      </p>
+    </p-panel>
+  </div>
+
+  <!-- Section Lots et Mouvements -->
+  <div class="col-12 md:col-8">
+    <!-- Tableau des Lots -->
+    <p-panel header="Lots de Stock du Produit Sélectionné">
+      <p-table
+        #dtLots
+        [value]="lots"
+        [rows]="5"
+        [paginator]="true"
+        [loading]="isLoadingLots"
+        responsiveLayout="scroll"
+        currentPageReportTemplate="Affichage {first} à {last} sur {totalRecords} lots"
+        [showCurrentPageReport]="true"
+        styleClass="p-datatable-sm"
+        ngSkipHydration
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            <th pSortableColumn="numeroLot">
+              N° Lot <p-sortIcon field="numeroLot"></p-sortIcon>
+            </th>
+            <th pSortableColumn="dateExpiration">
+              Date Exp. <p-sortIcon field="dateExpiration"></p-sortIcon>
+            </th>
+            <th pSortableColumn="quantiteActuelle">
+              Qté Actuelle <p-sortIcon field="quantiteActuelle"></p-sortIcon>
+            </th>
+            <th>Statut</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-lot>
+          <tr>
+            <td>{{ lot.numeroLot }}</td>
+            <td>{{ lot.dateExpiration | date : "dd/MM/yyyy" }}</td>
+            <td>{{ lot.quantiteActuelle }}</td>
+            <td>
+              <p-badge
+                *ngIf="getBadgeValue(lot)"
+                [value]="getBadgeValue(lot)"
+                [severity]="getBadgeSeverity(lot)"
+              >
+              </p-badge>
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="4" class="text-center">
+              Aucun lot trouvé pour ce produit ou aucun produit sélectionné.
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="loadingbody">
+          <tr>
+            <td colspan="4" class="text-center">
+              <p-progressSpinner
+                styleClass="w-4rem h-4rem"
+                strokeWidth="8"
+                fill="var(--surface-ground)"
+                animationDuration=".5s"
+              ></p-progressSpinner>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </p-panel>
+
+    <!-- Formulaire de Mouvement -->
+    <p-panel header="Ajouter un Mouvement de Stock" styleClass="mt-4">
+      <form [formGroup]="mouvementForm" (ngSubmit)="ajouterMouvement()">
+        <!-- Le produit est sélectionné via le dropdown plus haut, lié par formControlName="produitId" -->
+        <div class="grid formgrid">
+          <div class="field col-12 md:col-6">
+            <label for="typeMouvement">Type de Mouvement</label>
+            <p-dropdown
+              id="typeMouvement"
+              [options]="typesMouvement"
+              formControlName="typeMouvement"
+              placeholder="Sélectionner un type"
+              optionLabel="label"
+              optionValue="value"
+              [style]="{ width: '100%' }"
+            >
+            </p-dropdown>
+            <small
+              class="p-error"
+              *ngIf="mouvementForm.get('typeMouvement')?.touched && mouvementForm.get('typeMouvement')?.errors?.['required']"
+            >
+              Le type est requis.
+            </small>
+          </div>
+
+          <div class="field col-12 md:col-6">
+            <label for="quantite">Quantité</label>
+            <p-inputNumber
+              id="quantite"
+              formControlName="quantite"
+              mode="decimal"
+              [min]="1"
+              [showButtons]="true"
+              inputId="quantiteInput"
+              [style]="{ width: '100%' }"
+            >
+            </p-inputNumber>
+            <small
+              class="p-error"
+              *ngIf="mouvementForm.get('quantite')?.touched && mouvementForm.get('quantite')?.errors?.['required']"
+            >
+              La quantité est requise.
+            </small>
+            <small
+              class="p-error"
+              *ngIf="mouvementForm.get('quantite')?.touched && mouvementForm.get('quantite')?.errors?.['min']"
+            >
+              La quantité doit être au moins 1.
+            </small>
+          </div>
+
+          <div class="field col-12">
+            <label for="motif">Motif (Optionnel)</label>
+            <textarea
+              id="motif"
+              pInputTextarea
+              formControlName="motif"
+              rows="3"
+              style="width: 100%"
+            >
+            </textarea>
+          </div>
+        </div>
+
+        <div class="flex justify-content-end mt-4">
+          <p-button
+            label="Ajouter Mouvement"
+            icon="pi pi-plus"
+            type="submit"
+            [disabled]="mouvementForm.invalid || isLoadingMouvement"
+            [loading]="isLoadingMouvement"
+          >
+          </p-button>
+        </div>
+      </form>
+    </p-panel>
+  </div>
+</div>

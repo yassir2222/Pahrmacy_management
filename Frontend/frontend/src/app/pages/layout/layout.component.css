@@ -1,0 +1,36 @@
+:host {
+  display: block; /* Ensure the component takes up space */
+  height: 100vh; /* Full viewport height */
+}
+
+.main-content {
+  flex-grow: 1; /* Allow main content to take remaining width */
+  display: flex;
+  flex-direction: column; /* Stack topbar and content vertically */
+  height: 100%;
+  overflow: hidden;
+  margin-left: 280px;
+  width: calc(100% - 300px);
+  margin-top: 60px;
+}
+
+/* Assuming app-topbar has a fixed height defined in its own CSS */
+/* If not, you might need to set a height here or in topbar.component.css */
+/* Example: app-topbar { height: 60px; flex-shrink: 0; } */
+
+.content {
+  flex-grow: 1; /* Allow content area to take remaining height */
+  padding: 1rem; /* Add some padding around the content */
+  overflow-y: auto; /* Allow only the content area to scroll vertically if needed */
+  background-color: #f9fafb11; /* Use a theme variable for background */
+  /* Or use a light color like #f4f7f9 */
+}
+
+/* Responsive adjustments (optional example) */
+@media (max-width: 768px) {
+  /* Example: Hide sidebar or make it overlay on smaller screens */
+  .layout-wrapper {
+    /* Adjust flex direction or other properties */
+  }
+  /* You might need corresponding changes in sidebar/topbar components */
+}

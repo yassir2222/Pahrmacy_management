@@ -1,0 +1,256 @@
+<div class="grid">
+  <div class="col-12">
+    <p-toast></p-toast>
+
+    <!-- Filtre de date -->
+    <div class="flex justify-content-between align-items-center mb-4">
+      <h1 class="text-2xl font-bold text-800 m-0">Rapports analytiques</h1>
+
+      <div class="flex gap-2 align-items-center">
+        <div class="field">
+          <label for="dateDebut" class="block text-sm mb-1"
+            >Date de début</label
+          >
+          <p-calendar
+            id="dateDebut"
+            [(ngModel)]="dateDebut"
+            [showIcon]="true"
+            dateFormat="dd/mm/yy"
+          ></p-calendar>
+        </div>
+
+        <div class="field">
+          <label for="dateFin" class="block text-sm mb-1">Date de fin</label>
+          <p-calendar
+            id="dateFin"
+            [(ngModel)]="dateFin"
+            [showIcon]="true"
+            dateFormat="dd/mm/yy"
+          ></p-calendar>
+        </div>
+
+        <button
+          pButton
+          type="button"
+          label="Appliquer"
+          icon="pi pi-filter"
+          (click)="filtrerParDate()"
+          class="mt-4"
+        ></button>
+      </div>
+    </div>
+
+    <!-- Spinner pendant le chargement -->
+    <div
+      *ngIf="loading"
+      class="flex justify-content-center align-items-center"
+      style="height: 400px"
+    >
+      <p-progressSpinner
+        strokeWidth="4"
+        [style]="{ width: '50px', height: '50px' }"
+      ></p-progressSpinner>
+    </div>
+
+    <!-- Contenu principal -->
+    <div *ngIf="!loading" class="grid">
+      <!-- Cartes de résumé -->
+      <div class="col-12 md:col-4">
+        <p-card styleClass="card-blue h-full">
+          <div class="flex flex-column align-items-center text-center">
+            <span class="stat-label">Total des ventes</span>
+            <span class="stat-value">{{ totalVentes | currency : "EUR" }}</span>
+            <span class="text-sm text-500">{{ nombreVentes }} ventes</span>
+          </div>
+        </p-card>
+      </div>
+
+      <div class="col-12 md:col-4">
+        <p-card styleClass="card-green h-full">
+          <div class="flex flex-column align-items-center text-center">
+            <span class="stat-label">Inventaire total</span>
+            <span class="stat-value">{{ totalProduits }} produits</span>
+            <span class="text-sm text-500">En stock actif</span>
+          </div>
+        </p-card>
+      </div>
+
+      <div class="col-12 md:col-4">
+        <p-card styleClass="card-orange h-full">
+          <div class="flex flex-column align-items-center text-center">
+            <span class="stat-label">Alertes stock</span>
+            <span class="stat-value">{{ produitsEnAlerte }}</span>
+            <span class="text-sm text-500">Produits sous seuil</span>
+          </div>
+        </p-card>
+      </div>
+
+      <!-- Graphiques -->
+      <div class="col-12 md:col-7">
+        <p-panel header="Évolution des ventes">
+          <div class="chart-container">
+            <p-chart
+              type="line"
+              [data]="ventesParJourData"
+              [options]="ventesParJourOptions"
+            ></p-chart>
+          </div>
+        </p-panel>
+      </div>
+
+      <div class="col-12 md:col-5">
+        <p-panel header="Top 5 produits vendus">
+          <div class="chart-container">
+            <p-chart
+              type="bar"
+              [data]="topProduitsData"
+              [options]="topProduitsOptions"
+            ></p-chart>
+          </div>
+        </p-panel>
+      </div>
+
+      <!-- Tableaux détaillés -->
+      <div class="col-12">
+        <p-panel header="Détail des ventes" [toggleable]="true">
+          <p-table
+            [value]="ventes"
+            [paginator]="true"
+            [rows]="5"
+            styleClass="p-datatable-sm"
+            [responsive]="true"
+          >
+            <ng-template pTemplate="header">
+              <tr>
+                <th>ID</th>
+                <th>Date</th>
+                <th>Montant</th>
+                <th>Utilisateur</th>
+                <th>Nombre d'articles</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-vente>
+              <tr>
+                <td>{{ vente.id }}</td>
+                <td>{{ vente.dateVente | date : "dd/MM/yyyy" }}</td>
+                <td>{{ vente.montantTotal | currency : "EUR" }}</td>
+                <td>{{ vente.utilisateurId }}</td>
+                <td>{{ vente.lignesVente?.length || 0 }}</td>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+              <tr>
+                <td colspan="5" class="text-center">
+                  Aucune vente trouvée pour cette période.
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </p-panel>
+      </div>
+
+      <!-- Produits en alerte -->
+      <div class="col-12 md:col-6">
+        <p-panel header="Produits sous seuil de stock" [toggleable]="true">
+          <p-table
+            [value]="produitsSousSeuil"
+            [paginator]="true"
+            [rows]="5"
+            styleClass="p-datatable-sm"
+            [responsive]="true"
+          >
+            <ng-template pTemplate="header">
+              <tr>
+                <th>Produit</th>
+                <th>Stock actuel</th>
+                <th>Seuil</th>
+                <th>Niveau</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-produit>
+              <tr>
+                <td>{{ produit.nomMedicament }}</td>
+                <td>{{ produit.quantiteTotaleEnStock }} unités</td>
+                <td>{{ produit.seuilStock }} unités</td>
+                <td>
+                  <div class="flex align-items-center">
+                    <div
+                      class="surface-300 border-round overflow-hidden w-7rem mr-2"
+                      style="height: 0.5rem"
+                    >
+                      <div
+                        class="bg-orange-500 h-full"
+                        [style]="{
+                          width: calculerPourcentageStock(produit) + '%'
+                        }"
+                      ></div>
+                    </div>
+                    <span class="text-orange-500 font-medium"
+                      >{{ calculerPourcentageStock(produit) }}%</span
+                    >
+                  </div>
+                </td>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+              <tr>
+                <td colspan="4" class="text-center">
+                  Aucun produit sous seuil de stock.
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </p-panel>
+      </div>
+
+      <!-- Lots expirants -->
+      <div class="col-12 md:col-6">
+        <p-panel
+          header="Lots proches de la date d'expiration"
+          [toggleable]="true"
+        >
+          <p-table
+            [value]="lotsExpirants"
+            [paginator]="true"
+            [rows]="5"
+            styleClass="p-datatable-sm"
+            [responsive]="true"
+          >
+            <ng-template pTemplate="header">
+              <tr>
+                <th>Numéro de lot</th>
+                <th>Produit</th>
+                <th>Quantité</th>
+                <th>Expiration</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-lot>
+              <tr>
+                <td>{{ lot.numeroLot }}</td>
+                <td>{{ lot.produit?.nomMedicament }}</td>
+                <td>{{ lot.quantiteActuelle }} unités</td>
+                <td>
+                  {{ lot.dateExpiration | date : "dd/MM/yyyy" }}
+                  <p-badge
+                    [value]="
+                      calculerJoursAvantExpiration(lot.dateExpiration) + ' j'
+                    "
+                    severity="warn"
+                    styleClass="small-badge"
+                  ></p-badge>
+                </td>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+              <tr>
+                <td colspan="4" class="text-center">
+                  Aucun lot expirant dans les 30 prochains jours.
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </p-panel>
+      </div>
+    </div>
+  </div>
+</div>

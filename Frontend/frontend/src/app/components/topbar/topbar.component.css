@@ -107,3 +107,220 @@
 body.sidebar-open .topbar {
   display: none;
 }
+
+/* Styles for notification panel */
+.notification-panel {
+  padding: 0.5rem;
+}
+
+.notification-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.notification-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.notification-list {
+  max-height: 350px;
+  overflow-y: auto;
+}
+
+.no-notifications {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem 0;
+  color: var(--surface-500);
+}
+
+.no-notifications i {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  color: var(--surface-500);
+}
+
+.notification-item {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--surface-200);
+}
+
+.notification-item:last-child {
+  border-bottom: none;
+}
+
+.notification-content {
+  display: flex;
+  align-items: flex-start;
+}
+
+.notification-icon {
+  margin-right: 1rem;
+}
+
+.notification-icon i {
+  font-size: 1.2rem;
+  padding: 0.5rem;
+  border-radius: 50%;
+  background-color: var(--surface-100);
+}
+
+.notification-icon i.p-badge-danger {
+  color: var(--red-500);
+  background-color: var(--red-100);
+}
+
+.notification-icon i.p-badge-warning {
+  color: var(--yellow-500);
+  background-color: var(--yellow-100);
+}
+
+.notification-icon i.p-badge-info {
+  color: var(--blue-500);
+  background-color: var(--blue-100);
+}
+
+.notification-details {
+  flex: 1;
+}
+
+.notification-title {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.notification-description {
+  color: var(--text-color-secondary);
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+}
+
+.notification-value {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.notification-actions {
+  display: flex;
+  align-items: center;
+}
+
+/* Styles for help panel */
+.help-panel {
+  padding: 0.75rem;
+  font-family: var(--font-family);
+}
+
+.help-header {
+  margin-bottom: 1rem;
+}
+
+.help-header h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--primary-color, #3b82f6);
+}
+
+.help-header p {
+  margin: 0;
+  color: var(--text-color-secondary);
+  font-size: 0.95rem;
+}
+
+.help-content {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.help-section {
+  margin-bottom: 1rem;
+}
+
+.help-section-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.help-section-header .section-icon {
+  margin-right: 0.75rem;
+  font-size: 1.25rem;
+  color: var(--primary-color, #3b82f6);
+}
+
+.help-section-header h4 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.help-section p {
+  margin: 0 0 0.75rem 0;
+  color: var(--text-color);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  padding-left: 2rem;
+}
+
+.help-footer {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.help-footer p {
+  margin: 0 0 0.75rem 0;
+  font-weight: 500;
+}
+
+.help-shortcuts {
+  margin-top: 1.5rem;
+  width: 100%;
+  background-color: var(--surface-ground, #f8f9fa);
+  border-radius: 6px;
+  padding: 0.75rem;
+}
+
+.shortcut-title {
+  margin: 0 0 0.5rem 0;
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: var(--text-color-secondary);
+}
+
+.shortcut-list {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.shortcut-list li {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.shortcut-list li:last-child {
+  margin-bottom: 0;
+}
+
+.shortcut-list .key {
+  display: inline-block;
+  background-color: var(--surface-card, #ffffff);
+  border: 1px solid var(--surface-border, #dfe7ef);
+  border-radius: 4px;
+  padding: 0.15rem 0.4rem;
+  margin-right: 0.5rem;
+  font-family: monospace;
+  font-weight: 600;
+  font-size: 0.85rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}

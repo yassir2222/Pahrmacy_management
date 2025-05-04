@@ -1,11 +1,11 @@
 import { Component, OnInit, ElementRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterLink, RouterLinkActive } from '@angular/router';
 
 @Component({
   selector: 'app-side-bar',
   standalone: true, // Assuming standalone
-  imports: [
-    /* Add CommonModule if using *ngIf/*ngFor, RouterModule for routerLink */
-  ],
+  imports: [CommonModule, RouterLink, RouterLinkActive],
   templateUrl: './side-bar.component.html',
   styleUrls: ['./side-bar.component.css'],
 })

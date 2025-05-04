@@ -1,0 +1,222 @@
+<p-toast></p-toast>
+<div class="vente-container p-fluid">
+  <form [formGroup]="venteForm" (ngSubmit)="validerVente()">
+    <p-card header="Informations Générales de la Vente">
+      <div class="grid formgrid p-fluid">
+        <div class="field col-12 md:col-6">
+          <label for="utilisateur">Vendeur</label>
+          <p-dropdown
+            id="utilisateur"
+            formControlName="utilisateurId"
+            [options]="utilisateurs"
+            optionLabel="username"
+            optionValue="id"
+            placeholder="Sélectionner un vendeur"
+            [filter]="true"
+            filterBy="username"
+            [showClear]="true"
+            [style]="{ width: '100%' }"
+            [loading]="isLoadingUtilisateurs"
+          >
+            <ng-template let-user pTemplate="item">
+              <div>{{ user.nom }} {{ user.prenom }} ({{ user.username }})</div>
+            </ng-template>
+          </p-dropdown>
+          <small
+            class="p-error"
+            *ngIf="venteForm.get('utilisateurId')?.touched && venteForm.get('utilisateurId')?.errors?.['required']"
+          >
+            Le vendeur est requis.
+          </small>
+        </div>
+
+        <div class="field col-12 md:col-6">
+          <label for="dateVente">Date de la Vente</label>
+          <p-calendar
+            id="dateVente"
+            formControlName="dateVente"
+            dateFormat="dd/mm/yy"
+            [showIcon]="true"
+            inputId="dateVenteInput"
+            [style]="{ width: '100%' }"
+          >
+          </p-calendar>
+          <small
+            class="p-error"
+            *ngIf="venteForm.get('dateVente')?.touched && venteForm.get('dateVente')?.errors?.['required']"
+          >
+            La date est requise.
+          </small>
+        </div>
+      </div>
+    </p-card>
+
+    <p-divider></p-divider>
+
+    <p-card header="Lignes de Vente">
+      <div class="mb-3">
+        <p-button
+          label="Ajouter une ligne"
+          icon="pi pi-plus"
+          (click)="addLigneVente()"
+          styleClass="p-button-sm p-button-success"
+        ></p-button>
+      </div>
+
+      <p-table
+        [value]="lignes.controls"
+        formArrayName="lignes"
+        styleClass="p-datatable-sm editable-cells-table"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            <th style="width: 40%">Produit</th>
+            <th style="width: 15%">Quantité</th>
+            <th style="width: 20%">Prix Unitaire</th>
+            <th style="width: 20%">Prix Total Ligne</th>
+            <th style="width: 5%">Actions</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-ligne let-i="rowIndex">
+          <tr [formGroupName]="i">
+            <td>
+              <p-dropdown
+                formControlName="produitId"
+                [options]="produits"
+                optionLabel="nomMedicament"
+                optionValue="id"
+                placeholder="Choisir produit"
+                (onChange)="onProductChange(i)"
+                [filter]="true"
+                filterBy="nomMedicament"
+                [style]="{ width: '100%' }"
+                [loading]="isLoadingProduits"
+              >
+              </p-dropdown>
+              <small
+                class="p-error"
+                *ngIf="ligne.get('produitId')?.touched && ligne.get('produitId')?.errors?.['required']"
+              >
+                Produit requis.
+              </small>
+            </td>
+            <td>
+              <p-inputNumber
+                formControlName="quantite"
+                mode="decimal"
+                [min]="1"
+                [showButtons]="true"
+                inputId="quantiteInput-{{ i }}"
+                (onInput)="onQuantityChange(i)"
+                [style]="{ width: '100%' }"
+              >
+              </p-inputNumber>
+              <small
+                class="p-error"
+                *ngIf="ligne.get('quantite')?.touched && ligne.get('quantite')?.errors?.['required']"
+              >
+                Qté requise.
+              </small>
+              <small
+                class="p-error"
+                *ngIf="ligne.get('quantite')?.touched && ligne.get('quantite')?.errors?.['min']"
+              >
+                Min 1.
+              </small>
+            </td>
+            <td>
+              <input
+                pInputText
+                type="text"
+                formControlName="prixUnitaire"
+                readonly
+                class="text-right"
+              />
+              <!-- Affichage formaté -->
+              <span class="ml-2">{{
+                ligne.get("prixUnitaire")?.value
+                  | currency : "EUR" : "symbol" : "1.2-2" : "fr"
+              }}</span>
+            </td>
+            <td>
+              <input
+                pInputText
+                type="text"
+                formControlName="prixTotalLigne"
+                readonly
+                class="text-right"
+              />
+              <!-- Affichage formaté -->
+              <span class="ml-2">{{
+                ligne.get("prixTotalLigne")?.value
+                  | currency : "EUR" : "symbol" : "1.2-2" : "fr"
+              }}</span>
+            </td>
+            <td>
+              <p-button
+                icon="pi pi-trash"
+                styleClass="p-button-danger p-button-sm"
+                (click)="removeLigneVente(i)"
+                [disabled]="lignes.length <= 1"
+              >
+              </p-button>
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="5">
+              Aucune ligne ajoutée. Cliquez sur "Ajouter une ligne".
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </p-card>
+
+    <p-divider></p-divider>
+
+    <div class="grid">
+      <div class="col-12 text-right">
+        <h4>
+          Montant Total:
+          {{ montantTotal | currency : "EUR" : "symbol" : "1.2-2" : "fr" }}
+        </h4>
+      </div>
+    </div>
+
+    <div class="flex justify-content-end mt-4">
+      <p-button
+        label="Valider la Vente"
+        icon="pi pi-check"
+        type="submit"
+        [disabled]="venteForm.invalid || isSaving || lignes.length === 0"
+        [loading]="isSaving"
+      >
+      </p-button>
+    </div>
+  </form>
+
+  <div
+    *ngIf="isLoadingProduits || isLoadingUtilisateurs"
+    class="loading-overlay"
+  >
+    <p-progressSpinner></p-progressSpinner>
+  </div>
+</div>
+
+<!-- Ajouter un peu de CSS pour le loading overlay (optionnel) -->
+<!-- Vous pouvez mettre cela dans vente.component.css -->
+<!-- 
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000; 
+}
+-->

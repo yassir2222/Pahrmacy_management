@@ -2,56 +2,130 @@
 <p-confirmDialog [style]="{ width: '450px' }"></p-confirmDialog>
 
 <!-- Dialog pour création/édition de produit -->
-<p-dialog [(visible)]="productDialog" [style]="{ width: '450px' }" header="Détails du produit" [modal]="true" styleClass="p-fluid">
+<p-dialog
+  [(visible)]="productDialog"
+  [style]="{ width: '450px' }"
+  header="Détails du produit"
+  [modal]="true"
+  styleClass="p-fluid"
+>
   <div class="field">
     <label for="nomMedicament">Nom du médicament</label>
-    <input type="text" pInputText id="nomMedicament" [(ngModel)]="product.nomMedicament" required autofocus [ngClass]="{'ng-invalid ng-dirty': submitted && !product.nomMedicament}"/>
-    <small class="p-error" *ngIf="submitted && !product.nomMedicament">Le nom est requis.</small>
+    <input
+      type="text"
+      pInputText
+      id="nomMedicament"
+      [(ngModel)]="product.nomMedicament"
+      required
+      autofocus
+      [ngClass]="{ 'ng-invalid ng-dirty': submitted && !product.nomMedicament }"
+    />
+    <small class="p-error" *ngIf="submitted && !product.nomMedicament"
+      >Le nom est requis.</small
+    >
   </div>
-  
+
   <div class="field">
     <label for="codeEAN">Code EAN</label>
-    <input type="text" pInputText id="codeEAN" [(ngModel)]="product.codeEAN"/>
+    <input type="text" pInputText id="codeEAN" [(ngModel)]="product.codeEAN" />
   </div>
-  
+
   <div class="field">
     <label for="forme">Forme</label>
-    <p-dropdown id="forme" [(ngModel)]="product.forme" [options]="formes" optionLabel="label" optionValue="value" placeholder="Sélectionner une forme" required [ngClass]="{'ng-invalid ng-dirty': submitted && !product.forme}"></p-dropdown>
-    <small class="p-error" *ngIf="submitted && !product.forme">La forme est requise.</small>
+    <p-dropdown
+      id="forme"
+      [(ngModel)]="product.forme"
+      [options]="formes"
+      optionLabel="label"
+      optionValue="value"
+      placeholder="Sélectionner une forme"
+      required
+      [ngClass]="{ 'ng-invalid ng-dirty': submitted && !product.forme }"
+    ></p-dropdown>
+    <small class="p-error" *ngIf="submitted && !product.forme"
+      >La forme est requise.</small
+    >
   </div>
-  
+
   <div class="field">
     <label for="dosage">Dosage</label>
-    <input type="text" pInputText id="dosage" [(ngModel)]="product.dosage"/>
+    <input type="text" pInputText id="dosage" [(ngModel)]="product.dosage" />
   </div>
-  
+
   <div class="field">
     <label for="prixVenteTTC">Prix TTC</label>
-    <p-inputNumber id="prixVenteTTC" [(ngModel)]="product.prixVenteTTC" mode="currency" currency="EUR" locale="fr-FR"></p-inputNumber>
+    <p-inputNumber
+      id="prixVenteTTC"
+      [(ngModel)]="product.prixVenteTTC"
+      mode="currency"
+      currency="EUR"
+      locale="fr-FR"
+    ></p-inputNumber>
   </div>
-  
+
   <div class="field">
     <label for="quantiteTotaleEnStock">Quantité en stock</label>
-    <p-inputNumber id="quantiteTotaleEnStock" [(ngModel)]="product.quantiteTotaleEnStock"></p-inputNumber>
+    <p-inputNumber
+      id="quantiteTotaleEnStock"
+      [(ngModel)]="product.quantiteTotaleEnStock"
+    ></p-inputNumber>
   </div>
-  
+
   <ng-template pTemplate="footer">
     <div class="flex justify-content-end gap-2">
-      <p-button label="Annuler" icon="pi pi-times" styleClass="p-button-text" (click)="hideDialog()"></p-button>
-      <p-button label="Enregistrer" icon="pi pi-check" styleClass="p-button-text p-button-success" (click)="saveProduct()"></p-button>
+      <p-button
+        label="Annuler"
+        icon="pi pi-times"
+        styleClass="p-button-text"
+        (click)="hideDialog()"
+      ></p-button>
+      <p-button
+        label="Enregistrer"
+        icon="pi pi-check"
+        styleClass="p-button-text p-button-success"
+        (click)="saveProduct()"
+      ></p-button>
     </div>
   </ng-template>
 </p-dialog>
 
 <p-toolbar styleClass="mb-6">
   <ng-template pTemplate="left">
-    <p-button label="Nouveau" icon="pi pi-plus" class="mr-2" (click)="openNew()"></p-button>
-    <p-button severity="danger" label="Supprimer" icon="pi pi-trash" outlined (click)="deleteSelectedProducts()" [disabled]="!selectedProducts || !selectedProducts.length"></p-button>
+    <p-button
+      label="Nouveau"
+      icon="pi pi-plus"
+      class="mr-2"
+      (click)="openNew()"
+    ></p-button>
+    <p-button
+      severity="danger"
+      label="Supprimer"
+      icon="pi pi-trash"
+      outlined
+      (click)="deleteSelectedProducts()"
+      [disabled]="!selectedProducts || !selectedProducts.length"
+    ></p-button>
   </ng-template>
 
   <ng-template pTemplate="right">
-    <p-fileUpload mode="basic" accept=".csv" [maxFileSize]="1000000" label="Importer" chooseLabel="Importer" auto class="mr-2 inline-block" [chooseButtonProps]="{ severity: 'secondary' }" (onUpload)="onUpload($event)" [customUpload]="true"></p-fileUpload>
-    <p-button label="Exporter" icon="pi pi-upload" severity="secondary" (click)="dt.exportCSV()"></p-button>
+    <p-fileUpload
+      mode="basic"
+      accept=".csv"
+      [maxFileSize]="1000000"
+      label="Importer"
+      chooseLabel="Importer"
+      auto
+      class="mr-2 inline-block"
+      [chooseButtonProps]="{ severity: 'secondary' }"
+      (onUpload)="onUpload($event)"
+      [customUpload]="true"
+    ></p-fileUpload>
+    <p-button
+      label="Exporter"
+      icon="pi pi-upload"
+      severity="secondary"
+      (click)="dt.exportCSV()"
+    ></p-button>
   </ng-template>
 </p-toolbar>
 
@@ -59,7 +133,7 @@
   #dt
   [value]="products"
   [rows]="10"
-  [paginator]="true" 
+  [paginator]="true"
   [globalFilterFields]="['nomMedicament', 'codeEAN', 'forme', 'dosage']"
   [tableStyle]="{ 'min-width': '75rem' }"
   [(selection)]="selectedProducts"
@@ -74,43 +148,76 @@
       <h5 class="m-0">Gestion des Produits</h5>
       <span class="p-input-icon-left">
         <i class="pi pi-search"></i>
-        <input pInputText type="text" (input)="dt.filterGlobal($any($event.target)?.value, 'contains')" placeholder="Rechercher..." />
+        <input
+          pInputText
+          type="text"
+          (input)="dt.filterGlobal($any($event.target)?.value, 'contains')"
+          placeholder="Rechercher..."
+        />
       </span>
     </div>
   </ng-template>
-  
+
   <ng-template pTemplate="header">
     <tr>
       <th style="width: 3rem">
         <p-tableHeaderCheckbox></p-tableHeaderCheckbox>
       </th>
-      <th pSortableColumn="codeEAN">Code EAN <p-sortIcon field="codeEAN"></p-sortIcon></th>
-      <th pSortableColumn="nomMedicament">Nom du médicament <p-sortIcon field="nomMedicament"></p-sortIcon></th>
-      <th pSortableColumn="forme">Forme <p-sortIcon field="forme"></p-sortIcon></th>
-      <th pSortableColumn="dosage">Dosage <p-sortIcon field="dosage"></p-sortIcon></th>
-      <th pSortableColumn="prixVenteTTC">Prix TTC <p-sortIcon field="prixVenteTTC"></p-sortIcon></th>
-      <th pSortableColumn="quantiteTotaleEnStock">Stock <p-sortIcon field="quantiteTotaleEnStock"></p-sortIcon></th>
+      <th pSortableColumn="codeEAN">
+        Code EAN <p-sortIcon field="codeEAN"></p-sortIcon>
+      </th>
+      <th pSortableColumn="nomMedicament">
+        Nom du médicament <p-sortIcon field="nomMedicament"></p-sortIcon>
+      </th>
+      <th pSortableColumn="forme">
+        Forme <p-sortIcon field="forme"></p-sortIcon>
+      </th>
+      <th pSortableColumn="dosage">
+        Dosage <p-sortIcon field="dosage"></p-sortIcon>
+      </th>
+      <th pSortableColumn="prixVenteTTC">
+        Prix TTC <p-sortIcon field="prixVenteTTC"></p-sortIcon>
+      </th>
+      <th pSortableColumn="quantiteTotaleEnStock">
+        Stock <p-sortIcon field="quantiteTotaleEnStock"></p-sortIcon>
+      </th>
       <th>Actions</th>
     </tr>
   </ng-template>
-  
+
   <ng-template pTemplate="body" let-product>
     <tr>
       <td>
         <p-tableCheckbox [value]="product"></p-tableCheckbox>
       </td>
-      <td>{{product.codeEAN}}</td>
-      <td>{{product.nomMedicament}}</td>
-      <td>{{product.forme}}</td>
-      <td>{{product.dosage}}</td>
-      <td>{{product.prixVenteTTC | currency:'EUR':'symbol':'1.2-2':'fr'}}</td>
+      <td>{{ product.codeEAN }}</td>
+      <td>{{ product.nomMedicament }}</td>
+      <td>{{ product.forme }}</td>
+      <td>{{ product.dosage }}</td>
       <td>
-        <p-tag [value]="'Info'" [severity]="'Info'"></p-tag>
-        <span class="ml-2">{{product.quantiteTotaleEnStock}}</span>
+        {{
+          product.prixVenteTTC | currency : "EUR" : "symbol" : "1.2-2" : "fr"
+        }}
       </td>
       <td>
-        <button pButton pRipple icon="pi pi-pencil" class="p-button-rounded p-button-success mr-2" (click)="editProduct(product)"></button>
-        <button pButton pRipple icon="pi pi-trash" class="p-button-rounded p-button-danger" (click)="deleteProduct(product)"></button>
+        <p-tag [value]="'Info'" [severity]="'Info'"></p-tag>
+        <span class="ml-2">{{ product.quantiteTotaleEnStock }}</span>
+      </td>
+      <td>
+        <button
+          pButton
+          pRipple
+          icon="pi pi-pencil"
+          class="p-button-rounded p-button-success mr-2"
+          (click)="editProduct(product)"
+        ></button>
+        <button
+          pButton
+          pRipple
+          icon="pi pi-trash"
+          class="p-button-rounded p-button-danger"
+          (click)="deleteProduct(product)"
+        ></button>
       </td>
     </tr>
   </ng-template>

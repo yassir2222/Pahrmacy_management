@@ -12,16 +12,15 @@
   /* width: calc(100% - 260px); */
   /* min-height: calc(100vh - 65px); */
 
-  background-color: #f9fafb; /* Light gray background */
+  background-color: #f9fafb11; /* Light gray background */
   font-family: "Poppins", sans-serif;
 }
 
 .dashboard-container {
-  margin-top: 50px;
-  margin-left: 260px;
   display: flex;
   flex-direction: column;
   gap: 25px; /* Space between rows */
+  width: 100%;
 }
 
 /* Header */
