@@ -1,5 +1,8 @@
 package emsi.project.backendms1.models;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -14,6 +17,9 @@ public class User {
     private String email;
     private String role;
 
+
+    @OneToMany(mappedBy = "utilisateur", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Vente> ventes = new ArrayList<>();
     public User(Long id, String username, String password, String email, String role) {
         this.id = id;
         this.username = username;
@@ -65,4 +71,12 @@ public class User {
     public void setRole(String role) {
         this.role = role;
     }
+    public List<Vente> getVentes() {
+        return ventes;
+    }
+
+    public void setVentes(List<Vente> ventes) {
+        this.ventes = ventes;
+    }
+
 }

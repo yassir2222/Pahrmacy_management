@@ -52,7 +52,6 @@ public class ProduitService {
         Produit product = productRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Produit non trouvé avec l'id: " + id));
 
-        // Vérifier s'il reste du stock avant de supprimer
         int remainingStock = stockLotRepository.calculateTotalStockQuantityForProduct(id);
         if (remainingStock > 0) {
             throw new IllegalStateException("Impossible de supprimer le produit : stock restant disponible (" + remainingStock + " unités)");
