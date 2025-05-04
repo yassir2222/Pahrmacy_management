@@ -83,8 +83,30 @@ public class StockService {
         produit.setQuantiteTotaleEnStock(totalStock);
         productRepository.save(produit);
     }
+    public LotDeStock updateStockLot(Long lotId, String numeroLot, LocalDate dateExpiration, int quantite, BigDecimal prixAchatHT) {
+        LotDeStock lot = stockLotRepository.findById(lotId)
+                .orElseThrow(() -> new EntityNotFoundException("Stock non trouvé avec l'ID: " + lotId));
 
-    @Transactional
+        if (quantite < 0) {
+            throw new IllegalArgumentException("La quantité ne peut pas être négative");
+        }
+
+        if (dateExpiration.isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException("La date d'expiration ne peut pas être dans le passé");
+        }
+
+        lot.setNumeroLot(numeroLot);
+        lot.setDateExpiration(dateExpiration);
+        lot.setQuantite(quantite);
+        lot.setPrixAchatHT(prixAchatHT);
+
+        LotDeStock updatedLot = stockLotRepository.save(lot);
+
+        updateProductTotalStock(lot.getProduit().getId());
+
+        return updatedLot;
+    }
+
     public LotDeStock removeStockFromLot(Long lotId, int quantity) {
         if (quantity <= 0) {
             throw new IllegalArgumentException("Quantity must be positive");

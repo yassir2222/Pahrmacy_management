@@ -39,8 +39,22 @@ public class LotDeStockController {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
         }
     }
+    @PostMapping("/update")
+    public ResponseEntity<?> updateStock(
+            @RequestParam Long lotId,
+            @RequestParam String numeroLot,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateExpiration,
+            @RequestParam int quantite,
+            @RequestParam BigDecimal prixAchatHT) {
 
-    @PostMapping("/remove")
+        try {
+            LotDeStock updatedStock = stockService.updateStockLot(lotId, numeroLot, dateExpiration, quantite, prixAchatHT);
+            return ResponseEntity.ok(updatedStock);
+        } catch (IllegalArgumentException | EntityNotFoundException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+            @PostMapping("/remove")
     public ResponseEntity<?> removeStock(@RequestParam Long lotId, @RequestParam int quantity) {
         try {
             LotDeStock updatedStock = stockService.removeStockFromLot(lotId, quantity);

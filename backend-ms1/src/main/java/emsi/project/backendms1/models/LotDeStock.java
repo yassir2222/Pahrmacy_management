@@ -28,7 +28,7 @@ public class LotDeStock {
     private LocalDate dateExpiration;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "product_id", nullable = false) // Clé étrangère dans la table stock_lots
+    @JoinColumn(name = "product_id", nullable = false)
     private Produit produit;
 
     @Column(nullable = false)
@@ -38,4 +38,60 @@ public class LotDeStock {
     private BigDecimal prixAchatHT;
 
     private LocalDate dateReception;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getNumeroLot() {
+        return numeroLot;
+    }
+
+    public void setNumeroLot(String numeroLot) {
+        this.numeroLot = numeroLot;
+    }
+
+    public LocalDate getDateExpiration() {
+        return dateExpiration;
+    }
+
+    public void setDateExpiration(LocalDate dateExpiration) {
+        this.dateExpiration = dateExpiration;
+    }
+
+    public Produit getProduit() {
+        return produit;
+    }
+
+    public void setProduit(Produit produit) {
+        this.produit = produit;
+    }
+
+    public int getQuantite() {
+        return quantite;
+    }
+
+    public void setQuantite(int quantite) {
+        this.quantite = quantite;
+    }
+
+    public BigDecimal getPrixAchatHT() {
+        return prixAchatHT;
+    }
+
+    public void setPrixAchatHT(BigDecimal prixAchatHT) {
+        this.prixAchatHT = prixAchatHT;
+    }
+
+    public LocalDate getDateReception() {
+        return dateReception;
+    }
+
+    public void setDateReception(LocalDate dateReception) {
+        this.dateReception = dateReception;
+    }
 }

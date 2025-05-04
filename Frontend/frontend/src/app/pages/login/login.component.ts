@@ -19,7 +19,7 @@ export class LoginComponent {
   http = inject(HttpClient);
   router = inject(Router); 
   onLogin() {
-    debugger;
+    
     this.http.post('http://localhost:8083/api/auth/login', this.loginObj).subscribe((res:any) => {
       if (res) {
         console.log(res);
