@@ -20,12 +20,12 @@
   --profile-border-color: #e5e7eb; /* Gray-200 */
   --profile-name-color: #1f2937; /* Gray-800 */
   --profile-job-color: #6b7280; /* Gray-500 */
-  --nav-text-color: #374151; /* Gray-700 */
+  --nav-text-color: #294c85; /* Gray-700 */
   --nav-icon-color: #4b5563; /* Gray-600 */
   --active-bg-color: #dbeafe; /* Blue-100 */
-  --active-text-color: #1d4ed8; /* Blue-700 */
+  --active-text-color: #1a306c; /* Blue-700 */
   --active-icon-color: #1d4ed8;
-  --hover-bg-color: #eff6ff; /* Blue-50 */
+  --hover-bg-color: #e6f1ff; /* Blue-50 */
   --footer-border-color: #e5e7eb; /* Gray-200 */
   --badge-bg-color: #ef4444; /* Red-500 */
   --badge-text-color: #ffffff;
