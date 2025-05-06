@@ -11,6 +11,11 @@ COPY . .
 
 RUN npm run build --prod
 
+# ---- DEBUGGING (Optional but recommended for now) ----
+RUN echo "Listing /app/dist contents:" && ls -la /app/dist
+RUN echo "Listing /app/dist/frontend contents:" && ls -la /app/dist/frontend
+# ---- END DEBUGGING ----
+
 FROM nginx:alpine
 
 COPY nginx.conf /etc/nginx/nginx.conf 

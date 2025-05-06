@@ -1,42 +1,61 @@
-version : '3.8'
+
+services:
+  # MySQL Database Service
+  mysql_db:
+    container_name: mysql-db-pharmacy
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: yassir@2002
+      MYSQL_DATABASE: pharmacyDB
+      MYSQL_USER: pharmacyuser
+      MYSQL_PASSWORD: yassir@2002
+      MYSQL_ROOT_PASSWORD_FOR_HEALTHCHECK: yassir@2002
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3307:3306"
+    networks:
+      - pharmacy-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p yassir@2002"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  pharmacy-backend:
+    container_name: pharmacy-backend-api
+    image: pms/pms:1.0.0
+    ports:
+      - "8083:8083"
+    networks:
+      - pharmacy-network
+    depends_on:
+      mysql_db:
+        condition: service_healthy
+    environment:
+      - DB_URL=jdbc:mysql://mysql_db:3306/pharmacyDB
+      - SPRING_DATASOURCE_USERNAME=pharmacyuser
+      - SPRING_DATASOURCE_PASSWORD=yassir@2002
+      - ACTIVE_PROFILE=${PROFILE:-dev}
+    restart: unless-stopped
+
+  pharmacy-frontend:
+    container_name: pharmacy-backend-front
+    image: pms/pms-ui:1.0.0
+    ports:
+      - "4200:80"
+    networks:
+      - pharmacy-network
+    depends_on:
+      - pharmacy-backend
+    restart: unless-stopped
+
+networks:
+  pharmacy-network:
+    driver: bridge
 
 volumes:
   mysql_data:
-networks:
-  spring-boot-mysql-network:
-    name: spring-boot-mysql-network
-services:
-  mysql:
-    image: mysql:8.0
-    container_name: mysql_container
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: root@2002
-      MYSQL_DATABASE: pharmacy_management
-      MYSQL_USER: userDB
-      MYSQL_PASSWORD: yassir@2002
-    ports:
-      - "3308:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-    networks:
-      - spring-boot-mysql-network
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      retries: 5
-      interval: 3s
-      timeout: 30s
-  pharmacy_management:
-    build : .
-    ports:
-      - "8083:8083"
-    depends_on:
-       mysql:
-         condition: service_healthy
-    environment:
-      - SPRING_PROFILES_ACTIVE=dev
-      - SPRING_DATASCOURCE_URL=jdbc:mysql://mysql:3306/pharmacy_management
-      - SPRING_DATASOURCE_USERNAME=userDB
-      - SPRING_DATASOURCE_PASSWORD=yassir@2002
-    networks:
-        - spring-boot-mysql-network
+    driver: local

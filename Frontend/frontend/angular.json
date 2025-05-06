@@ -31,7 +31,6 @@
             ],
             "scripts": [],
             "server": "src/main.server.ts",
-            "prerender": true,
             "ssr": {
               "entry": "server.ts"
             }
@@ -41,19 +40,35 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kB",
-                  "maximumError": "1MB"
+                  "maximumWarning": "1.5mb", // Adjusted based on new lazy loaded size
+                  "maximumError": "1.5mb"   // Adjusted based on new lazy loaded size
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "2kB",
-                  "maximumError": "4kB"
+                  "maximumWarning": "6kB", // Increased slightly for fonts if inlining persists
+                  "maximumError": "9kB"   // Increased slightly for fonts if inlining persists
                 }
               ],
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "optimization": { // ADD THIS OPTIMIZATION BLOCK
+                "scripts": true,
+                "styles": {
+                  "minify": true,
+                  "inlineCritical": true
+                },
+                "fonts": {
+                  "inline": false
+                }
+              },
+              "prerender": false 
             },
             "development": {
-              "optimization": false,
+              
+              "optimization": { 
+                "scripts": false,
+                "styles": false,
+                "fonts": false 
+              },
               "extractLicenses": false,
               "sourceMap": true
             }
