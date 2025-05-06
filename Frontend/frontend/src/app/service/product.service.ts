@@ -1,25 +1,8 @@
-/* import { TestBed } from '@angular/core/testing';
-
-import { ProductService } from './product.service';
-
-describe('ProductService', () => {
-  let service: ProductService;
-
-  beforeEach(() => {
-    TestBed.configureTestingModule({});
-    service = TestBed.inject(ProductService);
-  });
-
-  it('should be created', () => {
-    expect(service).toBeTruthy();
-  });
-}); */
-
-// src/app/service/product.service.ts (Rename to produit.service.ts recommended)
-import { Inject, inject, Injectable, PLATFORM_ID } from '@angular/core';
-import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+// src/app/service/product.service.ts
+import { Inject, Injectable, PLATFORM_ID } from '@angular/core';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { catchError, tap } from 'rxjs/operators';
+import { catchError, tap, map } from 'rxjs/operators';
 import { Produit } from '../models/Produit'; 
 import { isPlatformBrowser } from '@angular/common';
 
@@ -30,60 +13,104 @@ export class ProductService {
 
   private apiUrl = 'http://localhost:8083/api/produits'; 
   
-
   constructor(
     private http: HttpClient,
     @Inject(PLATFORM_ID) private platformId: Object 
   ) { }
 
   getProducts(): Observable<Produit[]> {
-    return this.http.get<Produit[]>(this.apiUrl+"/all")
+    return this.http.get<Produit[]>(`${this.apiUrl}/all`)
       .pipe(
-        tap(data => console.log('Fetched products:', data)), // For debugging
+        map(products => {
+          // Ensure all products have properly formatted fields
+          return products.map(product => this.formatProductData(product));
+        }),
+        tap(data => console.log('Fetched products:', data)), 
         catchError(this.handleError)
       );
   }
 
-  // GET: Fetch product by ID (optional, if needed)
   getProduct(id: number): Observable<Produit> {
     const url = `${this.apiUrl}/${id}`;
     return this.http.get<Produit>(url)
       .pipe(
+        map(product => this.formatProductData(product)),
         tap(data => console.log(`Fetched product id=${id}`)),
         catchError(this.handleError)
       );
   }
 
-  // POST: Create a new product
   createProduct(product: Produit): Observable<Produit> {
-    return this.http.post<Produit>(this.apiUrl+"/add", product)
+    // Create a copy of the product to avoid modifying the original
+    const productToSend = {...product};
+    
+    // Ensure price values are properly formatted for the backend (Java expects BigDecimal)
+    if (productToSend.prixVenteTTC !== undefined && productToSend.prixVenteTTC !== null) {
+      // Ensure it's a number, not a string
+      productToSend.prixVenteTTC = Number(productToSend.prixVenteTTC);
+    }
+    
+    if (productToSend.prixAchatHT !== undefined && productToSend.prixAchatHT !== null) {
+      productToSend.prixAchatHT = Number(productToSend.prixAchatHT);
+    }
+    
+    console.log('Attempting to create product with data:', JSON.stringify(productToSend, null, 2));
+    return this.http.post<Produit>(`${this.apiUrl}/add`, productToSend)
       .pipe(
-        tap((newProduct: Produit) => console.log(`Added product w/ id=${newProduct.id}`)),
-        catchError(this.handleError)
+        map(product => this.formatProductData(product)),
+        tap((newProduct: Produit) => console.log(`Added product successfully with id=${newProduct.id}`)),
+        catchError(error => {
+          console.error('Failed to create product. Error details:', error);
+          if (error.error instanceof Object) {
+            console.error('Error body:', JSON.stringify(error.error, null, 2));
+          } else if (typeof error.error === 'string') {
+            console.error('Error message from server:', error.error);
+          }
+          return this.handleError(error);
+        })
       );
   }
 
-  // PUT: Update an existing product
   updateProduct(id: number, product: Produit): Observable<Produit> {
-    const url = `${this.apiUrl}"/update/"${id}`;
-    return this.http.put<Produit>(url, product)
+    // Create a copy of the product to avoid modifying the original
+    const productToSend = {...product};
+    
+    // Ensure price values are properly formatted for the backend (Java expects BigDecimal)
+    if (productToSend.prixVenteTTC !== undefined && productToSend.prixVenteTTC !== null) {
+      productToSend.prixVenteTTC = Number(productToSend.prixVenteTTC);
+    }
+    
+    if (productToSend.prixAchatHT !== undefined && productToSend.prixAchatHT !== null) {
+      productToSend.prixAchatHT = Number(productToSend.prixAchatHT);
+    }
+    
+    const url = `${this.apiUrl}/update/${id}`;
+    return this.http.put<Produit>(url, productToSend)
       .pipe(
+        map(product => this.formatProductData(product)),
         tap(_ => console.log(`Updated product id=${id}`)),
         catchError(this.handleError)
       );
   }
 
-  // DELETE: Delete a product by ID
-  deleteProduct(id: number): Observable<void> { // Expect no content back
+  deleteProduct(id: number): Observable<void> {
     const url = `${this.apiUrl}/delete/${id}`;
-    return this.http.delete<void>(url) // Use <void>
+    console.log(`Attempting to delete product with ID: ${id}`);
+    return this.http.delete<void>(url)
       .pipe(
-        tap(_ => console.log(`Deleted product id=${id}`)),
-        catchError(this.handleError)
+        tap(_ => console.log(`Successfully deleted product id=${id}`)),
+        catchError(error => {
+          console.error(`Error deleting product with ID ${id}:`, error);
+          if (error.error instanceof Object) {
+            console.error('Error body:', JSON.stringify(error.error, null, 2));
+          } else if (typeof error.error === 'string') {
+            console.error('Error message from server:', error.error);
+          }
+          return this.handleError(error);
+        })
       );
   }
 
-  // DELETE: Delete multiple products by IDs
   deleteSelectedProducts(ids: number[]): Observable<void> {
       const url = `${this.apiUrl}/batch`;
       return this.http.request<void>('delete', url, { body: ids }) 
@@ -93,33 +120,51 @@ export class ProductService {
         );
   }
 
+  // Helper method to format product data consistently
+  private formatProductData(product: Produit): Produit {
+    if (!product) return product;
+    
+    // Make a copy to avoid modifying the original object
+    const formattedProduct = {...product};
+    
+    // Ensure prixVenteTTC is a number
+    if (formattedProduct.prixVenteTTC !== undefined && formattedProduct.prixVenteTTC !== null) {
+      formattedProduct.prixVenteTTC = Number(formattedProduct.prixVenteTTC);
+    }
+    
+    // Ensure prixAchatHT is a number
+    if (formattedProduct.prixAchatHT !== undefined && formattedProduct.prixAchatHT !== null) {
+      formattedProduct.prixAchatHT = Number(formattedProduct.prixAchatHT);
+    }
+    
+    // Ensure quantiteTotaleEnStock is a number
+    if (formattedProduct.quantiteTotaleEnStock !== undefined && formattedProduct.quantiteTotaleEnStock !== null) {
+      formattedProduct.quantiteTotaleEnStock = Number(formattedProduct.quantiteTotaleEnStock);
+    } else {
+      // Default to 0 if missing
+      formattedProduct.quantiteTotaleEnStock = 0;
+    }
+    
+    return formattedProduct;
+  }
 
-  // Basic error handling
   private handleError(error: HttpErrorResponse) {
     let errorMessage = 'Unknown error!';
     
-    // Check if we're in a browser environment before attempting browser-specific operations
-    //if (isPlatformBrowser(this.platformId)) {
-      // Browser-only code can go here safely
-      if (true) {
-      // Utiliser une approche compatible avec SSR (pas de ErrorEvent)
+    if (isPlatformBrowser(this.platformId)) {
       if (typeof error.error === 'object' && error.error !== null && 'message' in error.error) {
-        // Erreur côté client avec un message dans l'objet error
         errorMessage = `Error: ${error.error.message}`;
       } else if (error.status) {
-        // Erreur côté serveur avec code d'état
         errorMessage = `Error Code: ${error.status}\nMessage: ${error.message}`;
         if (error.error && typeof error.error === 'string') {
            errorMessage += `\nServer Error: ${error.error}`;
         } 
       } else if (error.message) {
-        // Autre type d'erreur avec message
         errorMessage = `Error: ${error.message}`;
       }
       
       console.error(errorMessage);
     } else {
-      // Server-side specific handling
       console.error('Server-side error occurred:', error.message);
       errorMessage = 'Server-side error occurred';
     }

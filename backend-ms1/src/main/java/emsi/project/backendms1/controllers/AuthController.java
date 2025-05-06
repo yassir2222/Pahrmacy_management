@@ -4,7 +4,6 @@ import emsi.project.backendms1.configuration.JwtUtils;
 import emsi.project.backendms1.models.User;
 import emsi.project.backendms1.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
-import lombok.extern.slf4j.XSlf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -36,22 +35,42 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?>register(@RequestBody User user) {
+    public ResponseEntity<?> register(@RequestBody User user) {
         if (userRepository.findByUsername(user.getUsername()) != null) {
             return ResponseEntity.badRequest().body("Username is already in use");
         }
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        return ResponseEntity.ok(userRepository.save(user));
+        User savedUser = userRepository.save(user);
+        
+        // Create response with token and user info
+        Map<String, Object> response = new HashMap<>();
+        response.put("token", jwtUtils.generateToken(savedUser.getUsername()));
+        response.put("user", savedUser);
+        
+        return ResponseEntity.ok(response);
     }
+    
     @PostMapping("/login")
-    public ResponseEntity<?>login(@RequestBody User user) {
+    public ResponseEntity<?> login(@RequestBody User user) {
         try {
-            Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword()));
+            Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword())
+            );
+            
             if (authentication.isAuthenticated()) {
-                Map<String, Object> authData = new HashMap<>();
-                authData.put("token", jwtUtils.generateToken(user.getUsername()));
-                authData.put("type", "Bearer");
-                return ResponseEntity.ok(authData);
+                // Find the user to return user details
+                User authenticatedUser = userRepository.findByUsername(user.getUsername());
+                
+                if (authenticatedUser != null) {
+                    Map<String, Object> response = new HashMap<>();
+                    response.put("token", jwtUtils.generateToken(user.getUsername()));
+                    
+                    // Don't send password in response
+                    authenticatedUser.setPassword(null);
+                    response.put("user", authenticatedUser);
+                    
+                    return ResponseEntity.ok(response);
+                }
             }
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
         } catch (Exception e) {

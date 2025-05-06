@@ -5,5 +5,6 @@ export enum FormeEnum {
     INJECTION = 'INJECTION',
     CREAM = 'CREAM',
     POWDER = 'POWDER',
-    SACHET = 'SACHET'
+    SACHET = 'SACHET',
+    COMPRIME = 'COMPRIMÉ'  // Ajout de la valeur COMPRIME
 }

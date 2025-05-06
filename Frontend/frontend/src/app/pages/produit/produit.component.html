@@ -200,8 +200,8 @@
         }}
       </td>
       <td>
-        <p-tag [value]="'Info'" [severity]="'Info'"></p-tag>
-        <span class="ml-2">{{ product.quantiteTotaleEnStock }}</span>
+        <p-tag [value]="getStockStatusText(product)" [severity]="getStockSeverity(product)"></p-tag>
+        <span class="ml-2">{{ product.quantiteTotaleEnStock || 0 }}</span>
       </td>
       <td>
         <button

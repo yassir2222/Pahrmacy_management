@@ -4,31 +4,33 @@
   <!-- Section Sélection Produit et Détails -->
   <div class="col-12 md:col-4">
     <p-panel header="Sélection et Détails Produit">
-      <div class="field">
-        <label for="produit">Choisir un produit</label>
-        <p-dropdown
-          id="produit"
-          [options]="produits"
-          formControlName="produitId"
-          optionLabel="nomMedicament"
-          optionValue="id"
-          placeholder="Sélectionner un produit"
-          [filter]="true"
-          filterBy="nomMedicament"
-          [showClear]="true"
-          [style]="{ width: '100%' }"
-          #produitDropdown
-          [loading]="isLoadingProduits"
-        >
-        </p-dropdown>
-        <!-- Afficher l'erreur si le champ est touché et invalide -->
-        <small
-          class="p-error"
-          *ngIf="mouvementForm.get('produitId')?.touched && mouvementForm.get('produitId')?.errors?.['required']"
-        >
-          Le produit est requis.
-        </small>
-      </div>
+      <form [formGroup]="mouvementForm" class="mb-3">
+        <div class="field">
+          <label for="produit">Choisir un produit</label>
+          <p-dropdown
+            id="produit"
+            [options]="produits"
+            formControlName="produitId"
+            optionLabel="nomMedicament"
+            optionValue="id"
+            placeholder="Sélectionner un produit"
+            [filter]="true"
+            filterBy="nomMedicament"
+            [showClear]="true"
+            [style]="{ width: '100%' }"
+            #produitDropdown
+            [loading]="isLoadingProduits"
+          >
+          </p-dropdown>
+          <!-- Afficher l'erreur si le champ est touché et invalide -->
+          <small
+            class="p-error"
+            *ngIf="mouvementForm.get('produitId')?.touched && mouvementForm.get('produitId')?.errors?.['required']"
+          >
+            Le produit est requis.
+          </small>
+        </div>
+      </form>
 
       <!-- Détails du Produit Sélectionné -->
       <p-card
@@ -95,8 +97,8 @@
             <th pSortableColumn="dateExpiration">
               Date Exp. <p-sortIcon field="dateExpiration"></p-sortIcon>
             </th>
-            <th pSortableColumn="quantiteActuelle">
-              Qté Actuelle <p-sortIcon field="quantiteActuelle"></p-sortIcon>
+            <th pSortableColumn="quantite">
+              Qté Actuelle <p-sortIcon field="quantite"></p-sortIcon>
             </th>
             <th>Statut</th>
           </tr>
@@ -105,7 +107,7 @@
           <tr>
             <td>{{ lot.numeroLot }}</td>
             <td>{{ lot.dateExpiration | date : "dd/MM/yyyy" }}</td>
-            <td>{{ lot.quantiteActuelle }}</td>
+            <td>{{ lot.quantite }}</td>
             <td>
               <p-badge
                 *ngIf="getBadgeValue(lot)"

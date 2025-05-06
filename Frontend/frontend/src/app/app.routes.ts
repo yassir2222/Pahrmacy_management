@@ -8,6 +8,8 @@ import { VenteComponent } from './pages/vente/vente.component';
 import { AlerteComponent } from './pages/alerte/alerte.component';
 import { RapportComponent } from './pages/rapport/rapport.component';
 import { ParametreComponent } from './pages/parametre/parametre.component';
+import { PharmacieGardeComponent } from './pages/pharmacie-garde/pharmacie-garde.component';
+import { authGuard, adminGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
   {
@@ -17,6 +19,7 @@ export const routes: Routes = [
   {
     path: 'app',
     component: LayoutComponent,
+    canActivate: [authGuard],
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard', component: DashboardComponent },
@@ -25,7 +28,8 @@ export const routes: Routes = [
       { path: 'vente', component: VenteComponent },
       { path: 'alertes', component: AlerteComponent },
       { path: 'rapports', component: RapportComponent },
-      { path: 'parametres', component: ParametreComponent },
+      { path: 'parametres', component: ParametreComponent, canActivate: [adminGuard] },
+      { path: 'pharmacies-garde', component: PharmacieGardeComponent },
     ],
   },
   {

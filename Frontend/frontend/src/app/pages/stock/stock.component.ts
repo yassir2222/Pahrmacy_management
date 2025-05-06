@@ -225,7 +225,7 @@ export class StockComponent implements OnInit {
         // Mettre à jour aussi la quantité totale dans selectedProduit si l'API ne la renvoie pas dans getLots
         if (this.selectedProduit) {
           this.selectedProduit.quantiteTotaleEnStock = this.lots.reduce(
-            (sum, lot) => sum + lot.quantiteActuelle,
+            (sum, lot) => sum + lot.quantite,
             0
           );
         }
@@ -254,9 +254,9 @@ export class StockComponent implements OnInit {
     return dateExpiration <= dateSeuil;
   }
 
-  isStockBas(quantiteActuelle: number | undefined): boolean {
-    // Check if quantiteActuelle is defined and not null
-    if (quantiteActuelle === undefined || quantiteActuelle === null) {
+  isStockBas(quantite: number | undefined): boolean {
+    // Check if quantite is defined and not null
+    if (quantite === undefined || quantite === null) {
       return false;
     }
     // Check if selectedProduit and seuilStock are defined
@@ -270,12 +270,12 @@ export class StockComponent implements OnInit {
       return false;
     }
     // Consider 0 or less as low stock, or below/equal to threshold
-    return quantiteActuelle <= this.selectedProduit.seuilStock;
+    return quantite <= this.selectedProduit.seuilStock;
   }
 
   getBadgeSeverity(lot: LotDeStock): BadgeSeverity {
     const expirationProche = this.isDateExpirationProche(lot.dateExpiration);
-    const stockBas = this.isStockBas(lot.quantiteActuelle);
+    const stockBas = this.isStockBas(lot.quantite);
 
     if (expirationProche || stockBas) {
       return 'danger'; // Matches BadgeSeverity
@@ -285,7 +285,7 @@ export class StockComponent implements OnInit {
 
   getBadgeValue(lot: LotDeStock): string {
     const expirationProche = this.isDateExpirationProche(lot.dateExpiration);
-    const stockBas = this.isStockBas(lot.quantiteActuelle);
+    const stockBas = this.isStockBas(lot.quantite);
 
     if (expirationProche && stockBas) return 'Stock bas / Exp. proche';
     if (expirationProche) return 'Exp. proche';

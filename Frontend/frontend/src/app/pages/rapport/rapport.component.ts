@@ -15,6 +15,8 @@ import { LotDeStock } from '../../models/LotDeStock';
 import { RapportService } from '../../service/rapport.service';
 import { PanelModule } from 'primeng/panel';
 import { BadgeModule } from 'primeng/badge';
+// Import our custom Chart.js module to fix the dependency issue
+import '../../charts.module';
 
 @Component({
   selector: 'app-rapport',
