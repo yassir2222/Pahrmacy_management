@@ -13,13 +13,22 @@
             optionValue="id"
             placeholder="Sélectionner un vendeur"
             [filter]="true"
-            filterBy="username"
+            filterBy="username,nom,prenom"
             [showClear]="true"
             [style]="{ width: '100%' }"
             [loading]="isLoadingUtilisateurs"
           >
             <ng-template let-user pTemplate="item">
-              <div>{{ user.nom }} {{ user.prenom }} ({{ user.username }})</div>
+              <div class="flex align-items-center">
+                <span class="pi pi-user mr-2"></span>
+                <div>{{ user.nom || '' }} {{ user.prenom || '' }} <small>({{ user.username }})</small></div>
+              </div>
+            </ng-template>
+            <ng-template let-user pTemplate="selectedItem">
+              <div class="flex align-items-center">
+                <span class="pi pi-user mr-2"></span>
+                <div>{{ user.nom || '' }} {{ user.prenom || '' }} <small>({{ user.username }})</small></div>
+              </div>
             </ng-template>
           </p-dropdown>
           <small

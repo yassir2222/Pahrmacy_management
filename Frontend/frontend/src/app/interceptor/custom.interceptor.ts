@@ -7,7 +7,7 @@ export const customInterceptor: HttpInterceptorFn = (req, next) => {
   
   // Vérifier si on est dans un navigateur avant d'accéder à localStorage
   if (isPlatformBrowser(platformId)) {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('auth_token'); // Using the same key as in AuthService
     
     // Seulement ajouter le header si un token existe
     if (token) {

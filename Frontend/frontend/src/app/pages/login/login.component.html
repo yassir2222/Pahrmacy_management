@@ -1,49 +1,68 @@
-
-<div class="container" id="container" style="margin-left: 20%; margin-top: 5%;">
-	<div class="form-container sign-up-container">
-		<form action="#">
-			<h1>Create Account</h1>
-			<div class="social-container">
-				<a href="#" class="social"><i class="fab fa-facebook-f"></i></a>
-				<a href="#" class="social"><i class="fab fa-google-plus-g"></i></a>
-				<a href="#" class="social"><i class="fab fa-linkedin-in"></i></a>
-			</div>
-			<span>or use your email for registration</span>
-			<input type="text" placeholder="Name" />
-			<input type="email" placeholder="Email" />
-			<input type="password" placeholder="Password" />
-			<button>Sign Up</button>
-		</form>
-	</div>
-	<div class="form-container sign-in-container">
-		<form action="#">
-			<h1>Log in</h1>
-			<div class="social-container">
-				<a href="#" class="social"><i class="fab fa-facebook-f"></i></a>
-				<a href="#" class="social"><i class="fab fa-google-plus-g"></i></a>
-				<a href="#" class="social"><i class="fab fa-linkedin-in"></i></a>
-			</div>
-			<span>or use your account</span>
-			<input type="text" name="username" placeholder="Username" [(ngModel)]="loginObj.username" />
-			<input type="password" name="password" placeholder="Password" [(ngModel)]="loginObj.password" />
-			<a href="#">Forgot your password?</a>
-			<button (click)="onLogin()" >Log In</button>
-		</form>
-	</div>
-	<div class="overlay-container">
-		<div class="overlay">
-			<div class="overlay-panel overlay-left">
-				<h1>Welcome Back!</h1>
-				<p>To keep connected with us please login with your personal info</p>
-				<button class="ghost" id="signIn">Sign In</button>
-			</div>
-			<div class="overlay-panel overlay-right">
-				<h1>Hello, Friend!</h1>
-				<p>Enter your personal details and start journey with us</p>
-				<button class="ghost" id="signUp">Sign Up</button>
-			</div>
-		</div>
-	</div>
+<div class="login-container">
+  <p-toast></p-toast>
+  
+  <div class="login-card">
+    <p-card styleClass="login-form-card">
+      <ng-template pTemplate="header">
+        <div class="login-header">
+          <h2>Gestion de Pharmacie</h2>
+          <h3>Connexion</h3>
+        </div>
+      </ng-template>
+      
+      <div class="login-form">
+        <div class="p-fluid">
+          <div class="p-field mb-3">
+            <label for="username">Nom d'utilisateur</label>
+            <span class="p-input-icon-left">
+              <i class="pi pi-user"></i>
+              <input 
+                id="username" 
+                type="text" 
+                pInputText 
+                [(ngModel)]="loginObj.username" 
+                placeholder="Entrez votre nom d'utilisateur" 
+                [disabled]="isLoading"
+                required
+              />
+            </span>
+          </div>
+          
+          <div class="p-field mb-4">
+            <label for="password">Mot de passe</label>
+            <span class="p-input-icon-left">
+              <i class="pi pi-lock"></i>
+              <input 
+                id="password" 
+                type="password" 
+                pInputText 
+                [(ngModel)]="loginObj.password" 
+                placeholder="Entrez votre mot de passe" 
+                [disabled]="isLoading"
+                required
+              />
+            </span>
+          </div>
+          
+          <button 
+            pButton 
+            type="button" 
+            label="Se connecter" 
+            icon="pi pi-sign-in" 
+            (click)="onLogin()" 
+            [loading]="isLoading" 
+            class="p-button-primary w-100"
+          ></button>
+        </div>
+      </div>
+      
+      <ng-template pTemplate="footer">
+        <div class="login-footer">
+          <p>© 2025 Gestion de Pharmacie. Tous droits réservés.</p>
+        </div>
+      </ng-template>
+    </p-card>
+  </div>
 </div>
 
 

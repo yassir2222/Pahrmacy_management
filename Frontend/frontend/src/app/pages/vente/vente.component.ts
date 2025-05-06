@@ -107,7 +107,13 @@ export class VenteComponent implements OnInit, OnDestroy {
       .getProduits()
       .pipe(
         takeUntil(this.destroy$),
-        catchError(() => {
+        catchError((err) => {
+          console.error('Erreur chargement produits:', err);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Erreur',
+            detail: 'Impossible de charger les produits.'
+          });
           this.isLoadingProduits = false;
           return of([]);
         })
@@ -118,16 +124,32 @@ export class VenteComponent implements OnInit, OnDestroy {
       });
 
     this.venteService
-      .getUtilisateurs()
+      .getVendeurs()
       .pipe(
         takeUntil(this.destroy$),
-        catchError(() => {
+        catchError((err) => {
+          console.error('Erreur chargement vendeurs:', err);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Erreur',
+            detail: 'Impossible de charger les vendeurs.'
+          });
           this.isLoadingUtilisateurs = false;
           return of([]);
         })
       )
       .subscribe((data) => {
+        console.log('Vendeurs reçus:', JSON.stringify(data));
         this.utilisateurs = data;
+        if (data.length === 0) {
+          this.messageService.add({
+            severity: 'warn',
+            summary: 'Attention',
+            detail: 'Aucun vendeur disponible. Veuillez créer des comptes vendeurs.'
+          });
+        } else {
+          console.log('Vendeurs disponibles:', data.map(u => `${u.username} (${u.role || 'sans rôle'})`).join(', '));
+        }
         this.isLoadingUtilisateurs = false;
       });
   }
@@ -162,6 +184,16 @@ export class VenteComponent implements OnInit, OnDestroy {
 
     if (selectedProduit && selectedProduit.prixVenteTTC !== undefined) {
       ligneGroup.get('prixUnitaire')?.setValue(selectedProduit.prixVenteTTC);
+      
+      // Check stock availability
+      if (selectedProduit.quantiteTotaleEnStock !== undefined && 
+          selectedProduit.quantiteTotaleEnStock <= 0) {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Attention',
+          detail: 'Produit en rupture de stock!',
+        });
+      }
     } else {
       ligneGroup.get('prixUnitaire')?.setValue(0);
     }

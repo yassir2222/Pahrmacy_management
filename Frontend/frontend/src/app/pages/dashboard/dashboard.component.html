@@ -9,41 +9,52 @@
         <h1>Dashboard</h1>
         <p>Aperçu des activités de votre pharmacie</p>
       </div>
-      <button class="btn btn-primary new-sale-btn">
+      <button class="btn btn-primary new-sale-btn" routerLink="/vente">
         <i class="bx bx-plus"></i> Nouvelle vente
       </button>
     </div>
 
+    <!-- Message d'erreur si nécessaire -->
+    <div *ngIf="error" class="alert alert-danger">
+      Une erreur s'est produite lors du chargement des données. Veuillez réessayer plus tard.
+    </div>
+
+    <!-- Indicateur de chargement -->
+    <div *ngIf="loading" class="loading-spinner">
+      <div class="spinner"></div>
+      <p>Chargement des données...</p>
+    </div>
+
     <!-- Statistiques -->
-    <div class="stats-grid">
+    <div class="stats-grid" *ngIf="!loading">
       <app-stat-card
         title="Produits en stock"
-        value="1,248"
-        [percentageChange]="12"
+        [value]="stats.totalProducts.toString()"
+        [percentageChange]="stats.stockTrend"
         icon="bx-capsule"
         iconBgColor="#dbeafe"
         iconColor="#1d4ed8"
       ></app-stat-card>
       <app-stat-card
         title="Ventes aujourd'hui"
-        value="87"
-        [percentageChange]="5.4"
+        [value]="stats.todaySales.toString()"
+        [percentageChange]="stats.salesTrend"
         icon="bx-receipt"
         iconBgColor="#d1fae5"
         iconColor="#047857"
       ></app-stat-card>
       <app-stat-card
         title="Alertes actives"
-        value="3"
-        [percentageChange]="1"
+        [value]="stats.activeAlerts.toString()"
+        [percentageChange]="stats.alertsTrend"
         icon="bx-error-alt"
         iconBgColor="#fef3c7"
         iconColor="#b45309"
       ></app-stat-card>
       <app-stat-card
         title="Expirations cette semaine"
-        value="14"
-        [percentageChange]="-3"
+        [value]="stats.expiringThisWeek.toString()"
+        [percentageChange]="stats.expirationsTrend"
         icon="bx-calendar-x"
         iconBgColor="#e9d5ff"
         iconColor="#7e22ce"
@@ -51,7 +62,7 @@
     </div>
 
     <!-- Graphiques -->
-    <div class="charts-grid">
+    <div class="charts-grid" *ngIf="!loading">
       <div class="chart-card">
         <div class="chart-header">
           <h4>Ventes hebdomadaires</h4>
@@ -76,7 +87,7 @@
     </div>
 
     <!-- Activité récente -->
-    <div class="bottom-grid">
+    <div class="bottom-grid" *ngIf="!loading">
       <app-recent-sales></app-recent-sales>
       <app-recent-alerts></app-recent-alerts>
     </div>

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, catchError, throwError } from 'rxjs';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { Observable, catchError, tap, throwError } from 'rxjs';
 import { Vente } from '../models/Vente';
 import { Produit } from '../models/Produit';
 import { LotDeStock } from '../models/LotDeStock';
@@ -28,8 +28,11 @@ export class RapportService {
     }
 
     return this.http
-      .get<Vente[]>(`${this.apiUrl}/ventes`, { params })
-      .pipe(catchError(this.handleError));
+      .get<Vente[]>(`${this.apiUrl}/ventes/all`, { params })
+      .pipe(
+        tap(ventes => console.log(`${ventes.length} ventes chargées`)),
+        catchError(this.handleError)
+      );
   }
 
   /**
@@ -38,7 +41,10 @@ export class RapportService {
   getProduits(): Observable<Produit[]> {
     return this.http
       .get<Produit[]>(`${this.apiUrl}/produits/all`)
-      .pipe(catchError(this.handleError));
+      .pipe(
+        tap(produits => console.log(`${produits.length} produits chargés`)),
+        catchError(this.handleError)
+      );
   }
 
   /**
@@ -46,8 +52,23 @@ export class RapportService {
    */
   getLots(): Observable<LotDeStock[]> {
     return this.http
-      .get<LotDeStock[]>(`${this.apiUrl}/lots`)
-      .pipe(catchError(this.handleError));
+      .get<LotDeStock[]>(`${this.apiUrl}/lots/all`)
+      .pipe(
+        tap(lots => console.log(`${lots.length} lots chargés`)),
+        catchError(this.handleError)
+      );
+  }
+
+  /**
+   * Récupère les statistiques résumées pour le dashboard
+   */
+  getDashboardStats(): Observable<any> {
+    return this.http
+      .get<any>(`${this.apiUrl}/rapports/dashboard`)
+      .pipe(
+        tap(stats => console.log('Statistiques dashboard chargées')),
+        catchError(this.handleError)
+      );
   }
 
   /**
@@ -63,13 +84,21 @@ export class RapportService {
   /**
    * Gestion des erreurs HTTP
    */
-  private handleError(error: any) {
-    console.error('Une erreur est survenue', error);
-    return throwError(
-      () =>
-        new Error(
-          'Erreur lors de la communication avec le serveur. Veuillez réessayer plus tard.'
-        )
+  private handleError(error: HttpErrorResponse) {
+    let errorMessage = 'Une erreur est survenue';
+    
+    if (error.error instanceof ErrorEvent) {
+      // Erreur côté client
+      errorMessage = `Erreur: ${error.error.message}`;
+    } else {
+      // Erreur côté serveur
+      errorMessage = `Code d'erreur: ${error.status}, ` +
+                    `Message: ${error.message}`;
+    }
+    
+    console.error(errorMessage);
+    return throwError(() => 
+      new Error('Erreur lors de la communication avec le serveur. Veuillez réessayer plus tard.')
     );
   }
 }

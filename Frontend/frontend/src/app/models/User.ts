@@ -1,9 +1,12 @@
 export interface User {
-  // Assuming User is an interface, add export keyword
-  // ... existing properties ...
+  id?: number;
+  username: string;
+  email?: string;
+  password?: string;  // Optional in responses
+  nom?: string;
+  prenom?: string;
+  role?: string;      // ADMIN, USER, etc.
+  dateCreation?: Date;
+  derniereConnexion?: Date;
+  actif?: boolean;
 }
-
-// Or if User is a class:
-// export class User {
-//   // ... existing properties and methods ...
-// }

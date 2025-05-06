@@ -1,0 +1,93 @@
+<div class="container">
+    <p-toast></p-toast>
+
+    <!-- En-tête et filtres -->
+    <div class="header-container">
+        <div class="header">
+            <h1>Pharmacies de Garde au Maroc</h1>
+            <p>Consultez les pharmacies de garde par ville et par période</p>
+        </div>
+
+        <div class="filter-container">
+            <!-- Sélecteur de ville -->
+            <div class="filter-item">
+                <label for="ville">Ville</label>
+                <p-dropdown id="ville" [options]="villes" [(ngModel)]="selectedVille" 
+                    placeholder="Sélectionner une ville" (onChange)="filterByVille()"
+                    [showClear]="true" styleClass="w-full">
+                </p-dropdown>
+            </div>
+
+            <!-- Sélecteur de période -->
+            <div class="filter-item">
+                <label for="periode">Période</label>
+                <p-dropdown id="periode" [options]="periodes" [(ngModel)]="selectedPeriode" 
+                    placeholder="Sélectionner une période" (onChange)="filterByPeriode()"
+                    [showClear]="true" styleClass="w-full">
+                </p-dropdown>
+            </div>
+
+            <!-- Bouton pour réinitialiser les filtres -->
+            <div class="filter-item">
+                <button pButton type="button" label="Réinitialiser" 
+                    icon="pi pi-filter-slash" (click)="resetFilters()" 
+                    class="p-button-outlined reset-button"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Affichage des résultats -->
+    <div class="content-container">
+        <!-- État de chargement -->
+        <div *ngIf="loading" class="loading-container">
+            <p-card styleClass="loading-card">
+                <ng-template pTemplate="header">
+                    <div class="loading-header">
+                        <i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i>
+                    </div>
+                </ng-template>
+                <p class="text-center">Chargement des pharmacies de garde...</p>
+            </p-card>
+        </div>
+
+        <!-- Aucun résultat -->
+        <div *ngIf="!loading && pharmaciesGarde.length === 0" class="no-results-container">
+            <p-card styleClass="no-results-card">
+                <ng-template pTemplate="header">
+                    <div class="no-results-header">
+                        <i class="pi pi-info-circle" style="font-size: 2rem"></i>
+                    </div>
+                </ng-template>
+                <p class="text-center">Aucune pharmacie de garde trouvée pour les critères sélectionnés.</p>
+            </p-card>
+        </div>
+
+        <!-- Liste des pharmacies de garde -->
+        <div *ngIf="!loading && pharmaciesGarde.length > 0" class="pharmacies-grid">
+            <p-card *ngFor="let pharmacie of pharmaciesGarde" styleClass="pharmacie-card">
+                <ng-template pTemplate="header">
+                    <div class="pharmacie-header">
+                        <p-tag [value]="getPeriodeLabel(pharmacie.periode || '')" 
+                            [severity]="getPeriodeClass(pharmacie.periode || '')">
+                        </p-tag>
+                    </div>
+                </ng-template>
+                
+                <div class="pharmacie-info">
+                    <h2>{{ pharmacie.nomPharmacie }}</h2>
+                    <p class="ville"><i class="pi pi-map-marker"></i> {{ pharmacie.ville }}</p>
+                    <p class="adresse">{{ pharmacie.adresse }}</p>
+                    <p class="telephone"><i class="pi pi-phone"></i> {{ pharmacie.telephone }}</p>
+                </div>
+
+                <ng-template pTemplate="footer">
+                    <div class="pharmacie-footer">
+                        <span class="date-info">Du {{ pharmacie.dateDebut | date:'dd/MM/yyyy' }} au {{ pharmacie.dateFin | date:'dd/MM/yyyy' }}</span>
+                        <button pButton type="button" icon="pi pi-map" label="Localiser" 
+                            class="p-button-outlined p-button-sm"></button>
+                    </div>
+                </ng-template>
+            </p-card>
+        </div>
+    </div>
+</div>

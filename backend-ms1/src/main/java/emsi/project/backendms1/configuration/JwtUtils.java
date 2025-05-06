@@ -1,9 +1,12 @@
 package emsi.project.backendms1.configuration;
 
-
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.SignatureException;
+import io.jsonwebtoken.UnsupportedJwtException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
@@ -43,46 +46,85 @@ public class JwtUtils {
     }
 
     public Boolean validateToken(String token, UserDetails userDetails) {
-        String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+        if (token == null || token.isEmpty()) {
+            return false;
+        }
+        
+        try {
+            String username = extractUsername(token);
+            return (username != null && username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+        } catch (Exception e) {
+            System.err.println("Token validation error: " + e.getMessage());
+            return false;
+        }
     }
 
     private boolean isTokenExpired(String token) {
         Date expirationDate = extractExpirationDate(token);
-        //expirationDate.before(new Date())
-        return  expirationDate.before(new Date()) ;
+        return expirationDate == null || expirationDate.before(new Date());
     }
-
 
     private Date extractExpirationDate(String token) {
         try {
             return extractClaim(token, Claims::getExpiration);
         } catch (Exception e) {
-            System.out.println(e);
+            System.err.println("Error extracting expiration date: " + e.getMessage());
             return null;
         }
     }
 
     public String extractUsername(String token) {
-        return extractClaim(token, Claims::getSubject);
+        if (token == null || token.isEmpty() || !token.contains(".")) {
+            System.err.println("Invalid token format: Token is empty or missing required format");
+            return null;
+        }
+        
+        try {
+            return extractClaim(token, Claims::getSubject);
+        } catch (Exception e) {
+            System.err.println("Error extracting username: " + e.getMessage());
+            return null;
+        }
     }
 
     private <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         Claims claims = extractAllClaims(token);
         if (claims == null) {
-            System.err.println("Claims are null for token");
             return null;
         }
         return claimsResolver.apply(claims);
     }
 
     private Claims extractAllClaims(String token) {
+        if (token == null || token.isEmpty()) {
+            System.err.println("Token is null or empty");
+            return null;
+        }
+        
+        // Validate token format
+        if (!token.contains(".")) {
+            System.err.println("Invalid JWT format: No period characters found");
+            return null;
+        }
+        
         try {
             return Jwts.parserBuilder()
                     .setSigningKey(getSignKey())
                     .build()
                     .parseClaimsJws(token)
                     .getBody();
+        } catch (MalformedJwtException e) {
+            System.err.println("Invalid JWT token: " + e.getMessage());
+            return null;
+        } catch (ExpiredJwtException e) {
+            System.err.println("JWT token is expired: " + e.getMessage());
+            return null;
+        } catch (UnsupportedJwtException e) {
+            System.err.println("JWT token is unsupported: " + e.getMessage());
+            return null;
+        } catch (SignatureException e) {
+            System.err.println("Invalid JWT signature: " + e.getMessage());
+            return null;
         } catch (Exception e) {
             System.err.println("Failed to parse JWT token: " + e.getMessage());
             return null;

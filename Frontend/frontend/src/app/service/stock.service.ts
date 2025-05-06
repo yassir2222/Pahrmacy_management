@@ -1,18 +1,20 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { Produit } from '../models/Produit'; // Assurez-vous que ce chemin est correct
-import { LotDeStock } from '../models/LotDeStock'; // Créez ce modèle si nécessaire
-import { MouvementStock } from '../models/MouvementStock'; // Créez ce modèle si nécessaire
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { Observable, throwError, of } from 'rxjs';
+import { catchError, tap } from 'rxjs/operators';
+import { Produit } from '../models/Produit';
+import { LotDeStock } from '../models/LotDeStock';
+import { MouvementStock } from '../models/MouvementStock';
 
 @Injectable({
   providedIn: 'root',
 })
 export class StockService {
-  // L'URL de base est gérée par l'intercepteur, nous utilisons des chemins relatifs
-  private produitsUrl = '/produits';
-  private lotsUrl = '/lots';
-  private mouvementUrl = '/lots/mouvement';
+  // Backend API base URLs
+  private baseApiUrl = 'http://localhost:8083/api';
+  private produitsUrl = `${this.baseApiUrl}/produits/all`;
+  private lotsUrl = `${this.baseApiUrl}/lots`;
+  private mouvementUrl = `${this.baseApiUrl}/lots/mouvement`;
 
   constructor(private http: HttpClient) {}
 
@@ -20,7 +22,11 @@ export class StockService {
    * Récupère la liste de tous les produits.
    */
   getProduits(): Observable<Produit[]> {
-    return this.http.get<Produit[]>(this.produitsUrl);
+    return this.http.get<Produit[]>(this.produitsUrl)
+      .pipe(
+        tap(produits => console.log(`${produits.length} produits chargés`)),
+        catchError(this.handleError)
+      );
   }
 
   /**
@@ -28,35 +34,97 @@ export class StockService {
    * @param produitId L'ID du produit
    */
   getLots(produitId: number): Observable<LotDeStock[]> {
+    console.log(`Tentative de chargement des lots pour le produit ID: ${produitId}`);
+    const url = `${this.lotsUrl}/produit/${produitId}`;
+    console.log(`URL appelée: ${url}`);
+    
+    return this.http.get<LotDeStock[]>(url)
+      .pipe(
+        tap(lots => {
+          console.log(`Réponse reçue: ${lots.length} lots chargés pour le produit ${produitId}`);
+          console.log('Lots:', lots);
+        }),
+        catchError(error => {
+          console.error(`Erreur lors du chargement des lots pour le produit ${produitId}:`, error);
+          
+          // Si l'endpoint n'existe pas, essayons une URL alternative
+          if (error.status === 404) {
+            console.log('Endpoint non trouvé, tentative avec une URL alternative...');
+            return this.getLotsAlternative(produitId);
+          }
+          
+          return throwError(() => error);
+        })
+      );
+  }
+  
+  /**
+   * Méthode alternative pour récupérer les lots (au cas où l'endpoint principal n'existe pas)
+   */
+  private getLotsAlternative(produitId: number): Observable<LotDeStock[]> {
+    // Essayons une URL alternative comme /lots?produitId=X
     const params = new HttpParams().set('produitId', produitId.toString());
-    return this.http.get<LotDeStock[]>(this.lotsUrl, { params });
+    return this.http.get<LotDeStock[]>(`${this.lotsUrl}`, { params })
+      .pipe(
+        tap(lots => console.log(`Alternative: ${lots.length} lots chargés pour le produit ${produitId}`)),
+        catchError(error => {
+          console.error('Échec de la méthode alternative:', error);
+          // Retourner un tableau vide pour éviter de bloquer l'UI
+          return of([]);
+        })
+      );
+  }
+
+  /**
+   * Récupère tous les lots
+   */
+  getAllLots(): Observable<LotDeStock[]> {
+    return this.http.get<LotDeStock[]>(`${this.lotsUrl}/all`)
+      .pipe(
+        tap(lots => console.log(`${lots.length} lots chargés au total`)),
+        catchError(this.handleError)
+      );
   }
 
   /**
    * Ajoute un nouveau mouvement de stock.
    * @param data Les données du mouvement de stock
    */
-  ajouterMouvement(data: MouvementStock): Observable<any> {
-    // Assurez-vous que l'objet 'data' correspond à ce que le backend attend
-    return this.http.post<any>(this.mouvementUrl, data);
+  ajouterMouvement(data: MouvementStock): Observable<MouvementStock> {
+    return this.http.post<MouvementStock>(`${this.mouvementUrl}/add`, data)
+      .pipe(
+        tap(mouvement => console.log(`Mouvement de stock ajouté: ${mouvement.typeMouvement} de ${mouvement.quantite} unités`)),
+        catchError(this.handleError)
+      );
+  }
+  
+  /**
+   * Récupère l'historique des mouvements de stock
+   */
+  getMouvements(): Observable<MouvementStock[]> {
+    return this.http.get<MouvementStock[]>(`${this.mouvementUrl}/all`)
+      .pipe(
+        tap(mouvements => console.log(`${mouvements.length} mouvements de stock chargés`)),
+        catchError(this.handleError)
+      );
+  }
+  
+  /**
+   * Gestion des erreurs HTTP
+   */
+  private handleError(error: HttpErrorResponse) {
+    let errorMessage = 'Une erreur est survenue';
+    
+    if (error.error instanceof ErrorEvent) {
+      // Erreur côté client
+      errorMessage = `Erreur: ${error.error.message}`;
+    } else {
+      // Erreur côté serveur
+      errorMessage = `Code d'erreur: ${error.status}, ` +
+                      `Message: ${error.message}`;
+    }
+    
+    console.error(errorMessage);
+    return throwError(() => new Error(errorMessage));
   }
 }
-
-// Interface pour LotDeStock (à créer dans ../models/LotDeStock.ts si elle n'existe pas)
-// export interface LotDeStock {
-//   id: number;
-//   numeroLot: string;
-//   dateExpiration: string; // ou Date
-//   quantiteActuelle: number;
-//   produit?: Produit; // Optionnel, selon la réponse API
-//   // autres champs si nécessaire
-// }
-
-// Interface pour MouvementStock (à créer dans ../models/MouvementStock.ts si elle n'existe pas)
-// export interface MouvementStock {
-//   produitId: number;
-//   typeMouvement: 'Reception' | 'Vente' | 'Perte' | 'Retour';
-//   quantite: number;
-//   motif?: string; // Optionnel
-//   // autres champs si nécessaire (ex: lotNumero si applicable)
-// }
