@@ -40,17 +40,17 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "1.5mb", // Adjusted based on new lazy loaded size
-                  "maximumError": "1.5mb"   // Adjusted based on new lazy loaded size
+                  "maximumWarning": "1.5mb", 
+                  "maximumError": "1.5mb"   
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "6kB", // Increased slightly for fonts if inlining persists
-                  "maximumError": "9kB"   // Increased slightly for fonts if inlining persists
+                  "maximumWarning": "6kB", 
+                  "maximumError": "9kB"   
                 }
               ],
               "outputHashing": "all",
-              "optimization": { // ADD THIS OPTIMIZATION BLOCK
+              "optimization": { 
                 "scripts": true,
                 "styles": {
                   "minify": true,

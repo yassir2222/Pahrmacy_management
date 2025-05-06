@@ -1,4 +1,3 @@
-# Étape 1 : Construction de l'application Angular
 FROM node:18 AS build-stage
 
 WORKDIR /app
@@ -11,10 +10,8 @@ COPY . .
 
 RUN npm run build --prod
 
-# ---- DEBUGGING (Optional but recommended for now) ----
 RUN echo "Listing /app/dist contents:" && ls -la /app/dist
 RUN echo "Listing /app/dist/frontend contents:" && ls -la /app/dist/frontend
-# ---- END DEBUGGING ----
 
 FROM nginx:alpine
 
