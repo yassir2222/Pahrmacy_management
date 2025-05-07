@@ -51,7 +51,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: Frontend/frontend 
-          file: Dockerfile 
+          file: Frontend/frontend/Dockerfile
           push: true
           platforms: linux/amd64 
           tags: | 
