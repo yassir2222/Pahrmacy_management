@@ -27,7 +27,7 @@ jobs:
         uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx 
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
       - name: Extract project version
         id: extract_version
@@ -50,8 +50,8 @@ jobs:
       - name: Build and Push to Docker Hub
         uses: docker/build-push-action@v5
         with:
-          context: Frontend/frontend # 
-          file: Frontend/frontend/Dockerfile 
+          context: Frontend/frontend 
+          file: Dockerfile 
           push: true
           platforms: linux/amd64 
           tags: | 

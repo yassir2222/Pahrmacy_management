@@ -28,7 +28,9 @@ jobs:
           java-version: '17'
           distribution: 'corretto'
           cache: 'maven'
-
+      - name: Make mvnw executable 
+        run: chmod +x ./mvnw
+        
       - name: Run Unit Tests (includes compile)
         run: ./mvnw clean verify 
 
@@ -39,6 +41,8 @@ jobs:
     defaults:
       run:
         working-directory: backend-ms1
+    outputs:
+        IMAGE_VERSION: ${{ steps.extract_version.outputs.VERSION }}  
     steps:
       - name: Checkout code 
         uses: actions/checkout@v4
@@ -53,7 +57,8 @@ jobs:
           java-version: '17'
           distribution: 'corretto'
           cache: 'maven'
-
+      - name: Make mvnw executable 
+        run: chmod +x ./mvnw
       - name: Extract project version
         id: extract_version
         run: |
