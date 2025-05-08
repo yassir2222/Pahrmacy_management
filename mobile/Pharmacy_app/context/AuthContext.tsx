@@ -1,79 +1,88 @@
-// contexts/AuthContext.tsx (Simplified Example)
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import * as SecureStore from 'expo-secure-store';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const AUTH_TOKEN_KEY = 'my-jwt-token'; // Define key here
+import { authAPI, User, AuthResponse } from '../services/api';
 
 interface AuthContextType {
-  token: string | null;
-  isLoading: boolean;
-  isAuthenticated: boolean; // Add this property
-  login: (newToken: string) => Promise<void>;
+  user: User | null;
+  isAuthenticated: boolean;
+  signup: (userData: User) => Promise<void>;
+  login: (username: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
-  const [token, setToken] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // Start loading until token is checked
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    // Load token from storage on app start
-    const loadToken = async () => {
-      try {
-        const storedToken = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
-        setToken(storedToken);
-      } catch (e) {
-        console.error("Failed to load token", e);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadToken();
+    // Check for stored user data on app start
+    loadStoredUser();
   }, []);
 
-  const login = async (newToken: string) => {
+  const loadStoredUser = async () => {
     try {
-        await AsyncStorage.setItem(AUTH_TOKEN_KEY, newToken);
-        setToken(newToken);
-    } catch (e) {
-      console.error("Failed to save token", e);
-      // Handle error appropriately
+      const storedUser = await AsyncStorage.getItem('user');
+      const storedToken = await AsyncStorage.getItem('token');
+      if (storedUser && storedToken) {
+        setUser(JSON.parse(storedUser));
+        setIsAuthenticated(true);
+      }
+    } catch (error) {
+      console.error('Error loading stored user:', error);
+    }
+  };
+
+  const signup = async (userData: User) => {
+    try {
+      const response = await authAPI.register(userData);
+      await AsyncStorage.setItem('token', response.token);
+      await AsyncStorage.setItem('user', JSON.stringify(response.user));
+      setUser(response.user);
+      setIsAuthenticated(true);
+    } catch (error) {
+      console.error('Error during signup:', error);
+      throw error;
+    }
+  };
+
+  const login = async (username: string, password: string): Promise<boolean> => {
+    try {
+      const response = await authAPI.login(username, password);
+      await AsyncStorage.setItem('token', response.token);
+      await AsyncStorage.setItem('user', JSON.stringify(response.user));
+      setUser(response.user);
+      setIsAuthenticated(true);
+      return true;
+    } catch (error) {
+      console.error('Error during login:', error);
+      return false;
     }
   };
 
   const logout = async () => {
     try {
-      await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
-      setToken(null);
-    } catch (e) {
-      console.error("Failed to delete token", e);
-       // Handle error appropriately
+      await AsyncStorage.removeItem('user');
+      await AsyncStorage.removeItem('token');
+      setUser(null);
+      setIsAuthenticated(false);
+    } catch (error) {
+      console.error('Error during logout:', error);
     }
   };
 
-  // Determine authentication status based on token presence
-  const isAuthenticated = token !== null;
-
   return (
-    <AuthContext.Provider value={{ 
-      token, 
-      isLoading, 
-      isAuthenticated, // Include the new property
-      login, 
-      logout 
-    }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, signup, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
-};
+}
 
-export const useAuth = () => {
+export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-};
+} 
