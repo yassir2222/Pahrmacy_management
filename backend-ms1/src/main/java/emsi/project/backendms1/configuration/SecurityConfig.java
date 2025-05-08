@@ -5,6 +5,7 @@ import emsi.project.backendms1.service.CustomUserDetailsService;
 import org.apache.catalina.filters.CorsFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -47,15 +48,27 @@ public class SecurityConfig {
         authenticationManagerBuilder.userDetailsService(customUserDetailsService).passwordEncoder(passwordEncoder);
         return authenticationManagerBuilder.build();
     }
-
     @Bean
+    @Order(1) // This chain will be evaluated first
+    public SecurityFilterChain actuatorPrometheusFilterChain(HttpSecurity http) throws Exception {
+        http
+                .securityMatcher("/actuator/prometheus") // IMPORTANT: This chain only applies to /actuator/prometheus
+                .authorizeHttpRequests(authorize -> authorize
+                        .anyRequest().permitAll() // All requests matching this path are permitted
+                )
+                .csrf(AbstractHttpConfigurer::disable); // Disable CSRF for this specific path
+        // Note: No JwtFilter is added to this chain
+        return http.build();
+    }
+    @Bean
+    @Order(2)
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http.sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .cors(withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth ->
-                        auth.requestMatchers("/api/auth/*").permitAll()
+                        auth.requestMatchers("/api/auth/**","/actuator/prometheus").permitAll()
                                 .anyRequest().authenticated())
                 .addFilterBefore(new JwtFilter(jwtUtils, customUserDetailsService), UsernamePasswordAuthenticationFilter.class)
                 .build();

@@ -18,3 +18,9 @@ logging:
   level:
     org.springframework.web: INFO
     org.hibernate: ERROR
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+          - prometheus
