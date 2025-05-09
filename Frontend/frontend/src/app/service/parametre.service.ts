@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, catchError, of, throwError } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface UserProfile {
   id?: number;
@@ -31,7 +32,8 @@ export interface ParametresUtilisateur {
   providedIn: 'root',
 })
 export class ParametreService {
-  private apiUrl = 'http://localhost:8083/api';
+    private apiUrlRoot = environment.apiUrl;
+    private apiUrl = `${this.apiUrlRoot}/api`;
 
   // Valeurs par défaut simulées - en production, ces données viendraient du backend
   private defaultParams: ParametresUtilisateur = {

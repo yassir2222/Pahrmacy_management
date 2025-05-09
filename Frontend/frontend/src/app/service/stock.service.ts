@@ -5,13 +5,15 @@ import { catchError, tap } from 'rxjs/operators';
 import { Produit } from '../models/Produit';
 import { LotDeStock } from '../models/LotDeStock';
 import { MouvementStock } from '../models/MouvementStock';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class StockService {
   // Backend API base URLs
-  private baseApiUrl = 'http://localhost:8083/api';
+  private apiUrlRoot = environment.apiUrl;
+  private baseApiUrl = `${this.apiUrlRoot}`;
   private produitsUrl = `${this.baseApiUrl}/produits/all`;
   private lotsUrl = `${this.baseApiUrl}/lots`;
   private mouvementUrl = `${this.baseApiUrl}/lots/mouvement`;

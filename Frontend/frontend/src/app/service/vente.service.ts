@@ -5,13 +5,15 @@ import { catchError, tap, map } from 'rxjs/operators';
 import { Produit } from '../models/Produit';
 import { User } from '../models/User';
 import { Vente } from '../models/Vente';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class VenteService {
   // Backend API base URLs
-  private baseApiUrl = 'http://localhost:8083/api';
+  private apiUrlRoot = environment.apiUrl;
+  private baseApiUrl = `${this.apiUrlRoot}`;
   private produitsUrl = `${this.baseApiUrl}/produits/all`;
   private utilisateursUrl = `${this.baseApiUrl}/users`; 
   private ventesUrl = `${this.baseApiUrl}/ventes`;

@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError, of, forkJoin } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
 
 export interface DashboardStats {
   totalProducts: number;
@@ -18,9 +19,10 @@ export interface DashboardStats {
   providedIn: 'root'
 })
 export class DashboardService {
-  private baseApiUrl = 'http://localhost:8083/api';
+    private apiUrlRoot = environment.apiUrl;
+    private baseApiUrl = `${this.apiUrlRoot}`;
 
-  constructor(private http: HttpClient) { }
+    constructor(private http: HttpClient) { }
 
   /**
    * Récupère toutes les statistiques du tableau de bord

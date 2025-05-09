@@ -4,6 +4,7 @@ import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 import { User } from '../models/User';
 import { Router } from '@angular/router';
+import { environment } from '../../environments/environment';
 
 interface AuthResponse {
   token: string;
@@ -28,7 +29,8 @@ interface RegisterRequest {
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = 'http://localhost:8083/api/auth';
+  private apiUrlRoot = environment.apiUrl;
+  private apiUrl = `${this.apiUrlRoot}/auth`;
   private currentUserSubject: BehaviorSubject<User | null>;
   public currentUser: Observable<User | null>;
   private tokenKey = 'auth_token';

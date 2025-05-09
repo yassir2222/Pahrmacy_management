@@ -2,12 +2,14 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, of, timer } from 'rxjs';
 import { catchError, map, switchMap } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ServerStatusService {
-  private baseApiUrl = 'http://localhost:8083/api';
+  private apiUrlRoot = environment.apiUrl;
+  private baseApiUrl = `${this.apiUrlRoot}`;
   private checkInterval = 30000; // 30 secondes
   private serverStatusSubject = new BehaviorSubject<boolean>(true);
   public serverStatus$ = this.serverStatusSubject.asObservable();

@@ -4,12 +4,14 @@ import { Observable, catchError, tap, throwError } from 'rxjs';
 import { Vente } from '../models/Vente';
 import { Produit } from '../models/Produit';
 import { LotDeStock } from '../models/LotDeStock';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class RapportService {
-  private apiUrl = 'http://localhost:8083/api';
+  private apiUrlRoot = environment.apiUrl;
+  private apiUrl = `${this.apiUrlRoot}`;
 
   constructor(private http: HttpClient) {}
 

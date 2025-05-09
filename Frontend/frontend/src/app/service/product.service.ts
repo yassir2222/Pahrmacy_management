@@ -5,13 +5,14 @@ import { Observable, throwError } from 'rxjs';
 import { catchError, tap, map } from 'rxjs/operators';
 import { Produit } from '../models/Produit'; 
 import { isPlatformBrowser } from '@angular/common';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root' 
 })
 export class ProductService { 
-
-  private apiUrl = 'http://localhost:8083/api/produits'; 
+  private apiUrlRoot = environment.apiUrl;
+  private apiUrl = `${this.apiUrlRoot}/produits`; 
   
   constructor(
     private http: HttpClient,

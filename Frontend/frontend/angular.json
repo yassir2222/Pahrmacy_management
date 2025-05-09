@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "frontend": {
+    "frontend": { 
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -13,7 +13,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "dist/frontend",
+            "outputPath": "dist/frontend", 
             "index": "src/index.html",
             "browser": "src/main.ts",
             "polyfills": ["zone.js"],
@@ -40,17 +40,23 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "1.5mb", 
-                  "maximumError": "1.5mb"   
+                  "maximumWarning": "1.5mb",
+                  "maximumError": "1.5mb"
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "6kB", 
-                  "maximumError": "9kB"   
+                  "maximumWarning": "6kB",
+                  "maximumError": "9kB"
+                }
+              ],
+              "fileReplacements": [ 
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.prod.ts"
                 }
               ],
               "outputHashing": "all",
-              "optimization": { 
+              "optimization": {
                 "scripts": true,
                 "styles": {
                   "minify": true,
@@ -60,14 +66,13 @@
                   "inline": false
                 }
               },
-              "prerender": false 
+              "prerender": false
             },
             "development": {
-              
-              "optimization": { 
+              "optimization": {
                 "scripts": false,
                 "styles": false,
-                "fonts": false 
+                "fonts": false
               },
               "extractLicenses": false,
               "sourceMap": true
@@ -79,10 +84,10 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "frontend:build:production"
+              "buildTarget": "frontend:build:production" 
             },
             "development": {
-              "buildTarget": "frontend:build:development"
+              "buildTarget": "frontend:build:development" 
             }
           },
           "defaultConfiguration": "development"

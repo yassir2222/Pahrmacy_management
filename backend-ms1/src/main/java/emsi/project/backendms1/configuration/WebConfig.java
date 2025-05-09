@@ -20,7 +20,9 @@ public class WebConfig { // Remove "implements WebMvcConfigurer"
                         .allowedOrigins(
                                 "http://localhost:8081",
                                 "http://localhost:19006",
-                                "http://localhost:4200","http://localhost:8083"
+                                "http://localhost:4200",
+                                "http://localhost:8083",
+                                "http://46.202.171.246:4200"
 
                         )
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")

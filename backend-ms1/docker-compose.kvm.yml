@@ -11,6 +11,7 @@ services:
       MYSQL_PASSWORD: yassir@2002
     volumes:
       - mysql_data:/var/lib/mysql
+    ports:
       - "3307:3306"
     networks:
       - pharmacy-network

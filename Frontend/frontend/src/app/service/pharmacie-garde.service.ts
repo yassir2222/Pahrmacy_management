@@ -3,12 +3,14 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { PharmacieGarde, villesMaroc } from '../models/PharmacieGarde';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class PharmacieGardeService {
-  private apiUrl = 'http://localhost:8083/api/pharmacies-garde';
+    private apiUrlRoot = environment.apiUrl;
+    private apiUrl = `${this.apiUrlRoot}/pharmacies-garde`;
 
   // Données de démonstration en attendant l'intégration avec l'API backend
   private mockData: PharmacieGarde[] = [
