@@ -8,7 +8,7 @@ RUN npm install
 
 COPY . .
 
-RUN npm run build --prod
+RUN npm run build -- --configuration production
 
 RUN echo "Listing /app/dist contents:" && ls -la /app/dist
 RUN echo "Listing /app/dist/frontend contents:" && ls -la /app/dist/frontend
