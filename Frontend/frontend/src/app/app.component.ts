@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { ThemeService } from './service/theme.service';
 
 @Component({
   selector: 'app-root',
@@ -8,7 +9,12 @@ import { RouterOutlet } from '@angular/router';
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
   title = 'frontend';
+  private themeService = inject(ThemeService);
   
+  ngOnInit() {
+    // Initialize theme on app startup
+    // Theme service will load preferences from localStorage
+  }
 }

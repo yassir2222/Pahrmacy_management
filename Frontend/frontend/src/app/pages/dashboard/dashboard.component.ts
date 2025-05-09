@@ -6,17 +6,26 @@ import { RecentSalesComponent } from '../../components/recent-sales/recent-sales
 import { RecentAlertsComponent } from '../../components/recent-alerts/recent-alerts.component';
 import { CommonModule } from '@angular/common';
 import { DashboardService, DashboardStats } from '../../service/dashboard.service';
+import { InventoryChartComponent } from '../../components/charts/inventory-chart.component';
+import { SalesChartComponent } from '../../components/charts/sales-chart.component';
+import { SalesHeatmapComponent } from '../../components/charts/sales-heatmap.component';
+import { ExpirationTimelineComponent } from '../../components/charts/expiration-timeline.component';
+import { InventoryForecastComponent } from '../../components/charts/inventory-forecast.component';
 
 @Component({
   selector: 'app-dashboard',
-  standalone: true,
-  imports: [
+  standalone: true,  imports: [
     CommonModule,
     TopbarComponent,
     SideBarComponent,
     StatCardComponent,
     RecentSalesComponent,
     RecentAlertsComponent,
+    InventoryChartComponent,
+    SalesChartComponent,
+    SalesHeatmapComponent,
+    ExpirationTimelineComponent,
+    InventoryForecastComponent,
   ],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css'],

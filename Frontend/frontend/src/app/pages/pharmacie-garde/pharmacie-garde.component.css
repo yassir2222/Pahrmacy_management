@@ -151,6 +151,36 @@
     text-align: center;
 }
 
+/* Styles for the tabs view */
+:host ::ng-deep .pharmacy-tabs .p-tabview-nav {
+    background-color: #ffffff;
+    border-radius: 8px;
+    padding: 4px;
+    margin-bottom: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+:host ::ng-deep .pharmacy-tabs .p-tabview-nav li .p-tabview-nav-link {
+    color: #4a5568;
+    border-radius: 6px;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+:host ::ng-deep .pharmacy-tabs .p-tabview-nav li.p-highlight .p-tabview-nav-link {
+    background-color: #3182ce;
+    color: #ffffff;
+}
+
+/* Map container styles */
+.map-tab-container {
+    height: 600px;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-top: 1rem;
+}
+
 @media (max-width: 768px) {
     .filter-item {
         flex: 100%;
@@ -158,5 +188,9 @@
     
     .pharmacies-grid {
         grid-template-columns: 1fr;
+    }
+    
+    .map-tab-container {
+        height: 400px;
     }
 }

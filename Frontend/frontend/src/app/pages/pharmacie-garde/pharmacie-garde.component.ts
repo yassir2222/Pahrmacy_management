@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { PharmacieGarde } from '../../models/PharmacieGarde';
 import { PharmacieGardeService } from '../../service/pharmacie-garde.service';
+import { PharmacyMapComponent } from '../../components/pharmacy-map/pharmacy-map.component';
 
 // Import des modules PrimeNG
 import { TableModule } from 'primeng/table';
@@ -17,15 +18,16 @@ import { RippleModule } from 'primeng/ripple';
 import { CardModule } from 'primeng/card';
 import { DividerModule } from 'primeng/divider';
 import { TagModule } from 'primeng/tag';
+import { TabViewModule } from 'primeng/tabview';
 
 @Component({
   selector: 'app-pharmacie-garde',
   templateUrl: './pharmacie-garde.component.html',
   styleUrls: ['./pharmacie-garde.component.css'],
-  standalone: true,
-  imports: [
+  standalone: true,  imports: [
     CommonModule,
     FormsModule,
+    PharmacyMapComponent,
     
     // PrimeNG Modules
     TableModule,
@@ -38,7 +40,8 @@ import { TagModule } from 'primeng/tag';
     RippleModule,
     CardModule,
     DividerModule,
-    TagModule
+    TagModule,
+    TabViewModule
   ],
   providers: [MessageService]
 })

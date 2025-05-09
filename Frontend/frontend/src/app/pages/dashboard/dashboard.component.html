@@ -59,31 +59,19 @@
         iconBgColor="#e9d5ff"
         iconColor="#7e22ce"
       ></app-stat-card>
-    </div>
-
-    <!-- Graphiques -->
+    </div>    <!-- Graphiques -->
     <div class="charts-grid" *ngIf="!loading">
-      <div class="chart-card">
-        <div class="chart-header">
-          <h4>Ventes hebdomadaires</h4>
-          <select>
-            <option>Cette semaine</option>
-            <option>Ce mois</option>
-          </select>
-        </div>
-        <div class="chart-placeholder">Graphique des ventes</div>
-      </div>
-
-      <div class="chart-card">
-        <div class="chart-header">
-          <h4>Niveaux de stock</h4>
-          <select>
-            <option>Tous les produits</option>
-            <option>Produit A</option>
-          </select>
-        </div>
-        <div class="chart-placeholder">Graphique des stocks</div>
-      </div>
+      <app-inventory-chart></app-inventory-chart>
+      <app-sales-chart></app-sales-chart>
+    </div>
+    
+    <div class="charts-grid" *ngIf="!loading">
+      <app-sales-heatmap></app-sales-heatmap>
+      <app-expiration-timeline></app-expiration-timeline>
+    </div>
+    
+    <div class="charts-grid" *ngIf="!loading">
+      <app-inventory-forecast></app-inventory-forecast>
     </div>
 
     <!-- Activité récente -->

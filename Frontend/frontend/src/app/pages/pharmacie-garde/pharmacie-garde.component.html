@@ -49,6 +49,11 @@
                 <p class="text-center">Chargement des pharmacies de garde...</p>
             </p-card>
         </div>
+        
+        <!-- TabView pour basculer entre la vue liste et la vue carte -->
+        <p-tabView *ngIf="!loading" styleClass="pharmacy-tabs">
+            <p-tabPanel header="Liste des pharmacies">
+                <!-- Contenu existant - Liste des pharmacies -->
 
         <!-- Aucun résultat -->
         <div *ngIf="!loading && pharmaciesGarde.length === 0" class="no-results-container">
@@ -60,9 +65,7 @@
                 </ng-template>
                 <p class="text-center">Aucune pharmacie de garde trouvée pour les critères sélectionnés.</p>
             </p-card>
-        </div>
-
-        <!-- Liste des pharmacies de garde -->
+        </div>        <!-- Liste des pharmacies de garde -->
         <div *ngIf="!loading && pharmaciesGarde.length > 0" class="pharmacies-grid">
             <p-card *ngFor="let pharmacie of pharmaciesGarde" styleClass="pharmacie-card">
                 <ng-template pTemplate="header">
@@ -89,5 +92,12 @@
                 </ng-template>
             </p-card>
         </div>
+            </p-tabPanel>
+            <p-tabPanel header="Carte des pharmacies">
+                <div class="map-tab-container">
+                    <app-pharmacy-map></app-pharmacy-map>
+                </div>
+            </p-tabPanel>
+        </p-tabView>
     </div>
 </div>

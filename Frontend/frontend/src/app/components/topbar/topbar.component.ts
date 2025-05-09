@@ -11,11 +11,12 @@ import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { AlertesService, AlerteItem } from '../../service/alertes.service';
 import { PanelModule } from 'primeng/panel';
+import { ThemeToggleComponent } from '../theme-toggle/theme-toggle.component';
+import { AdvancedSearchComponent } from '../advanced-search/advanced-search.component';
 
 @Component({
   selector: 'app-topbar',
-  standalone: true,
-  imports: [
+  standalone: true,  imports: [
     CommonModule,
     RouterModule,
     OverlayPanelModule,
@@ -26,6 +27,8 @@ import { PanelModule } from 'primeng/panel';
     DividerModule,
     ToastModule,
     PanelModule,
+    ThemeToggleComponent,
+    AdvancedSearchComponent,
   ],
   providers: [MessageService],
   templateUrl: './topbar.component.html',

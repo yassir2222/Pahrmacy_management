@@ -1,0 +1,181 @@
+/* Theme Variables */
+
+:root {
+  /* Light Theme (Default) */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f7fa;
+  --bg-tertiary: #edf2f7;
+  --text-primary: #2d3748;
+  --text-secondary: #4a5568;
+  --text-muted: #718096;
+  --border-color: #e2e8f0;
+  --card-bg: #ffffff;
+  --card-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.05);
+  
+  /* Primary Colors */
+  --primary-50: #ebf5ff;
+  --primary-100: #e1effe;
+  --primary-200: #c3ddfd;
+  --primary-300: #a4cafe;
+  --primary-400: #76a9fa;
+  --primary-500: #3f83f8;
+  --primary-600: #1c64f2;
+  --primary-700: #1a56db;
+  --primary-800: #1e429f;
+  --primary-900: #233876;
+  
+  /* Success Colors */
+  --success-50: #f3faf7;
+  --success-100: #def7ec;
+  --success-200: #bcf0da;
+  --success-300: #84e1bc;
+  --success-400: #31c48d;
+  --success-500: #0e9f6e;
+  --success-600: #057a55;
+  --success-700: #046c4e;
+  --success-800: #03543f;
+  --success-900: #014737;
+  
+  /* Warning Colors */
+  --warning-50: #fffbeb;
+  --warning-100: #fef3c7;
+  --warning-200: #fde68a;
+  --warning-300: #fcd34d;
+  --warning-400: #fbbf24;
+  --warning-500: #f59e0b;
+  --warning-600: #d97706;
+  --warning-700: #b45309;
+  --warning-800: #92400e;
+  --warning-900: #78350f;
+  
+  /* Danger Colors */
+  --danger-50: #fdf2f2;
+  --danger-100: #fde8e8;
+  --danger-200: #fbd5d5;
+  --danger-300: #f8b4b4;
+  --danger-400: #f98080;
+  --danger-500: #f05252;
+  --danger-600: #e02424;
+  --danger-700: #c81e1e;
+  --danger-800: #9b1c1c;
+  --danger-900: #771d1d;
+  
+  /* UI Elements */
+  --input-bg: #ffffff;
+  --input-border: #e2e8f0;
+  --input-text: #2d3748;
+  --input-placeholder: #a0aec0;
+  --input-focus-border: #3f83f8;
+  
+  /* Transition */
+  --transition-speed: 0.3s;
+}
+
+/* Dark Theme */
+[data-theme="dark"] {
+  --bg-primary: #1a202c;
+  --bg-secondary: #2d3748;
+  --bg-tertiary: #4a5568;
+  --text-primary: #f7fafc;
+  --text-secondary: #e2e8f0;
+  --text-muted: #a0aec0;
+  --border-color: #4a5568;
+  --card-bg: #2d3748;
+  --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  
+  /* Primary Colors - Adjusted for dark mode */
+  --primary-50: #1e429f;
+  --primary-100: #1a56db;
+  --primary-200: #1c64f2;
+  --primary-300: #3f83f8;
+  --primary-400: #76a9fa;
+  --primary-500: #a4cafe;
+  --primary-600: #c3ddfd;
+  --primary-700: #e1effe;
+  --primary-800: #ebf5ff;
+  --primary-900: #f0f7ff;
+  
+  /* UI Elements */
+  --input-bg: #2d3748;
+  --input-border: #4a5568;
+  --input-text: #f7fafc;
+  --input-placeholder: #a0aec0;
+  --input-focus-border: #76a9fa;
+}
+
+/* Global styles that respond to theme */
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color var(--transition-speed) ease, 
+              color var(--transition-speed) ease;
+}
+
+/* Card styling */
+.p-card, .card {
+  background-color: var(--card-bg);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+  box-shadow: var(--card-shadow);
+  transition: background-color var(--transition-speed) ease, 
+              color var(--transition-speed) ease,
+              box-shadow var(--transition-speed) ease;
+}
+
+/* Input styling */
+.p-inputtext {
+  background-color: var(--input-bg);
+  color: var(--input-text);
+  border-color: var(--input-border);
+}
+
+.p-inputtext::placeholder {
+  color: var(--input-placeholder);
+}
+
+.p-inputtext:focus {
+  border-color: var(--input-focus-border);
+}
+
+/* Button styling */
+.p-button.p-button-primary {
+  background-color: var(--primary-600);
+  border-color: var(--primary-600);
+  color: white;
+}
+
+.p-button.p-button-primary:hover {
+  background-color: var(--primary-700);
+  border-color: var(--primary-700);
+}
+
+/* Table styling */
+.p-datatable .p-datatable-thead > tr > th {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+.p-datatable .p-datatable-tbody > tr {
+  background-color: var(--card-bg);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+.p-datatable .p-datatable-tbody > tr:nth-child(even) {
+  background-color: var(--bg-secondary);
+}
+
+/* Sidebar styling */
+.sidebar {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+/* Theme transition */
+* {
+  transition: background-color var(--transition-speed) ease-out, 
+              color var(--transition-speed) ease-out,
+              border-color var(--transition-speed) ease-out;
+}

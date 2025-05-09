@@ -1,9 +1,8 @@
-<div class="topbar">
-  <div class="search-container">
-    <i class="bx bx-search search-icon"></i>
-    <input type="text" placeholder="Rechercher..." (input)="onSearch($event)" />
+<div class="topbar">  <div class="search-container">
+    <app-advanced-search></app-advanced-search>
   </div>
   <div class="actions-container">
+    <app-theme-toggle></app-theme-toggle>
     <i
       class="bx bx-bell notification-icon"
       (click)="onNotificationClick($event)"

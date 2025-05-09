@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   FormBuilder,
@@ -25,6 +25,7 @@ import {
   AppPreferences,
   AlertSettings,
 } from '../../service/parametre.service';
+import { ThemeService } from '../../service/theme.service';
 
 @Component({
   selector: 'app-parametre',
@@ -115,6 +116,9 @@ export class ParametreComponent implements OnInit {
   currentPreferences: AppPreferences | null = null;
   currentAlertSettings: AlertSettings | null = null;
 
+  // Inject theme service
+  private themeService = inject(ThemeService);
+
   constructor(
     private formBuilder: FormBuilder,
     private parametreService: ParametreService,
@@ -137,11 +141,9 @@ export class ParametreComponent implements OnInit {
       prenom: ['', [Validators.required, Validators.minLength(2)]],
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.minLength(6)]],
-    });
-
-    // Formulaire de préférences
+    });    // Formulaire de préférences
     this.preferencesForm = this.formBuilder.group({
-      theme: [false], // false = light, true = dark
+      theme: [this.themeService.isDarkMode], // Sync with theme service
       langue: ['fr', Validators.required],
       notifications: [true],
     });
@@ -264,10 +266,14 @@ export class ParametreComponent implements OnInit {
     this.loading = true;
 
     const formValue = this.preferencesForm.value;
+    const isDarkTheme = formValue.theme === true;
+    
+    // Apply theme change immediately using the theme service
+    this.themeService.setTheme(isDarkTheme);
 
     // Convertir le boolean en string pour le thème
     const preferencesData: AppPreferences = {
-      theme: formValue.theme ? 'dark' : 'light',
+      theme: isDarkTheme ? 'dark' : 'light',
       langue: formValue.langue,
       notifications: formValue.notifications,
     };
