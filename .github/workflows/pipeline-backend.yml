@@ -117,12 +117,12 @@ jobs:
           ssh-keyscan -H ${{ secrets.KVM_HOST }} >> ~/.ssh/known_hosts
           ssh ${{ secrets.KVM_USER }}@${{ secrets.KVM_HOST }} "mkdir -p /opt/pms-app/logstash/pipeline"
           
-          scp ../backend-ms1/docker-compose.kvm.yml ${{ secrets.KVM_USER }}@${{ secrets.KVM_HOST }}:/opt/pms-app/docker-compose.yml
+          scp ./backend-ms1/docker-compose.kvm.yml ${{ secrets.KVM_USER }}@${{ secrets.KVM_HOST }}:/opt/pms-app/docker-compose.yml
 
 
           # Copiez les configurations nécessaires
-          scp ../backend-ms1/prometheus.yml ${{ secrets.KVM_USER }}@${{ secrets.KVM_HOST }}:/opt/pms-app/prometheus.yml
-          scp -r ../backend-ms1/logstash/pipeline/* ${{ secrets.KVM_USER }}@${{ secrets.KVM_HOST }}:/opt/pms-app/logstash/pipeline/
+          scp ./backend-ms1/prometheus.yml ${{ secrets.KVM_USER }}@${{ secrets.KVM_HOST }}:/opt/pms-app/prometheus.yml
+          scp -r ./backend-ms1/logstash/pipeline/* ${{ secrets.KVM_USER }}@${{ secrets.KVM_HOST }}:/opt/pms-app/logstash/pipeline/
 
       - name: Deploy application on KVM
         env:
