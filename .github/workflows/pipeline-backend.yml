@@ -101,7 +101,7 @@ jobs:
     name: Deploy to KVM Server
     needs: [build-and-push-image] 
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/ci/pipeline' 
+    if: github.ref == 'refs/heads/ci/pipeline' || github.event_name == 'workflow_dispatch'
 
     steps:
       - name: Checkout code
@@ -131,10 +131,7 @@ jobs:
           ssh ${{ secrets.KVM_USER }}@${{ secrets.KVM_HOST }} << EOF
             cd /opt/pms-app
             
-            # Optionnel: Login to Docker Hub si vos images sont privées (le serveur doit le faire une fois ou à chaque fois)
-            # Si vos images sont publiques, ce n'est pas nécessaire.
-            # Si elles sont privées, vous pouvez configurer Docker sur le serveur pour qu'il se souvienne des identifiants
-            # ou passer le token ici (moins sécurisé pour le token).
+
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
             echo "Pulling latest images..."
