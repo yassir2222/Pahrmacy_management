@@ -1,0 +1,153 @@
+version: '3.8'
+
+services:
+  mysql_db:
+    container_name: mysql-db-pharmacy
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: yassir@2002
+      MYSQL_DATABASE: pharmacyDB
+      MYSQL_USER: pharmacyuser
+      MYSQL_PASSWORD: yassir@2002
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - "3307:3306"
+    networks:
+      - pharmacy-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-pyassir@2002"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  pharmacy-backend:
+    container_name: pharmacy-backend-api
+    image: yassirlambrass/pms-api:latest
+    ports:
+      - "8083:8083"
+    networks:
+      - pharmacy-network
+    depends_on:
+      mysql_db:
+        condition: service_healthy
+      logstash:
+        condition: service_started
+    environment:
+      - MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=prometheus
+      - MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED=true
+      - DB_URL=jdbc:mysql://mysql_db:3306/pharmacyDB
+      - SPRING_DATASOURCE_USERNAME=pharmacyuser
+      - SPRING_DATASOURCE_PASSWORD=yassir@2002
+      - ACTIVE_PROFILE=${PROFILE:-prod}
+    restart: unless-stopped
+
+  pharmacy-frontend:
+    container_name: pharmacy-backend-front
+    image: yassirlambrass/pms-ui:latest
+    ports:
+      - "4200:80"
+    networks:
+      - pharmacy-network
+    depends_on:
+      - pharmacy-backend
+    restart: unless-stopped
+
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090" #
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    networks:
+      - pharmacy-network
+    restart: unless-stopped
+    depends_on:
+      - pharmacy-backend
+
+  grafana:
+    container_name: grafana
+    image: grafana/grafana-oss:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    networks:
+      - pharmacy-network
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.1
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - xpack.security.enabled=false
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    ports:
+      - "127.0.0.1:9200:9200"
+    networks:
+      - pharmacy-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s --fail http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.17.1
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    networks:
+      - pharmacy-network
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    restart: unless-stopped
+
+  logstash:
+    container_name: logstash
+    image: docker.elastic.co/logstash/logstash:8.17.1
+    ports:
+      - "5044:5044"
+    volumes:
+      - ./logstash/pipeline:/usr/share/logstash/pipeline
+    environment:
+      - LS_JAVA_OPTS=-Xms256m -Xmx256m
+    networks:
+      - pharmacy-network
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    restart: unless-stopped
+
+networks:
+  pharmacy-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local
+  prometheus_data: { }
+  grafana_data: { }
+  elasticsearch_data: { }
