@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Modal, ScrollView, Alert } from 'react-native';
+import React, { useState, useCallback, useEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Modal, ScrollView, Alert, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface Supplier {
   id: string;
@@ -60,7 +61,9 @@ const mockSuppliers: Supplier[] = [
 export default function SuppliersScreen({ navigation }: SuppliersScreenProps) {
   const { theme } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
-  const [suppliers, setSuppliers] = useState<Supplier[]>(mockSuppliers);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [newSupplier, setNewSupplier] = useState<Partial<Supplier>>({
@@ -71,28 +74,81 @@ export default function SuppliersScreen({ navigation }: SuppliersScreenProps) {
     status: 'active',
   });
 
+  const fetchSuppliers = useCallback(async () => {
+    console.log('Fetching suppliers...');
+    setLoading(true);
+    try {
+      const storedSuppliers = await AsyncStorage.getItem('suppliers');
+      console.log('Retrieved suppliers from AsyncStorage:', storedSuppliers);
+      
+      if (storedSuppliers) {
+        const parsedSuppliers = JSON.parse(storedSuppliers);
+        console.log('Parsed suppliers:', parsedSuppliers);
+        setSuppliers(parsedSuppliers);
+      } else {
+        console.log('No stored suppliers found, using initial data');
+        setSuppliers(mockSuppliers);
+        await AsyncStorage.setItem('suppliers', JSON.stringify(mockSuppliers));
+        console.log('Initial suppliers saved to AsyncStorage');
+      }
+    } catch (error) {
+      console.error('Error in fetchSuppliers:', error);
+      Alert.alert('Error', 'Failed to fetch suppliers: ' + (error as Error).message);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSuppliers();
+  }, [fetchSuppliers]);
+
+  const saveSuppliers = async (updatedSuppliers: Supplier[]) => {
+    try {
+      await AsyncStorage.setItem('suppliers', JSON.stringify(updatedSuppliers));
+    } catch (error) {
+      console.error('Error saving suppliers:', error);
+      Alert.alert('Error', 'Failed to save suppliers: ' + (error as Error).message);
+    }
+  };
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchSuppliers();
+  }, [fetchSuppliers]);
+
   const filteredSuppliers = suppliers.filter(supplier =>
     supplier.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleDeleteSupplier = (supplierId: string) => {
-    Alert.alert(
-      'Delete Supplier',
-      'Are you sure you want to delete this supplier?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            setSuppliers(suppliers.filter(supplier => supplier.id !== supplierId));
-          },
-        },
-      ],
-    );
+    console.log('Delete button clicked for supplier ID:', supplierId);
+    console.log('Current suppliers:', suppliers);
+    
+    // Direct deletion without confirmation for testing
+    try {
+      const updatedSuppliers = suppliers.filter(supplier => supplier.id !== supplierId);
+      console.log('Filtered suppliers:', updatedSuppliers);
+      
+      // Update state immediately
+      setSuppliers(updatedSuppliers);
+      console.log('State updated');
+      
+      // Save to storage
+      AsyncStorage.setItem('suppliers', JSON.stringify(updatedSuppliers))
+        .then(() => {
+          console.log('Saved to storage');
+          Alert.alert('Success', 'Supplier deleted');
+        })
+        .catch(err => {
+          console.error('Storage error:', err);
+          Alert.alert('Error', 'Failed to save');
+        });
+    } catch (error) {
+      console.error('Delete error:', error);
+      Alert.alert('Error', 'Failed to delete');
+    }
   };
 
   const handleEditSupplier = (supplier: Supplier) => {
@@ -101,42 +157,27 @@ export default function SuppliersScreen({ navigation }: SuppliersScreenProps) {
     setModalVisible(true);
   };
 
-  const handleAddSupplier = () => {
+  const handleAddSupplier = async () => {
     if (!newSupplier.name || !newSupplier.contact || !newSupplier.email) {
       Alert.alert('Error', 'Please fill in all required fields');
       return;
     }
 
-    if (editingSupplier) {
-      // Update existing supplier
-      setSuppliers(suppliers.map(supplier => 
-        supplier.id === editingSupplier.id
-          ? {
-              ...supplier,
-              name: newSupplier.name || supplier.name,
-              contact: newSupplier.contact || supplier.contact,
-              email: newSupplier.email || supplier.email,
-              products: newSupplier.products || supplier.products,
-              status: newSupplier.status || supplier.status,
-            }
-          : supplier
-      ));
-    } else {
-      // Add new supplier
-      const today = new Date().toISOString().split('T')[0];
-      const supplierToAdd: Supplier = {
-        id: (suppliers.length + 1).toString(),
-        name: newSupplier.name || '',
-        contact: newSupplier.contact || '',
-        email: newSupplier.email || '',
-        products: newSupplier.products || 0,
-        lastOrder: today,
-        status: newSupplier.status as 'active' | 'inactive',
-      };
-      setSuppliers([...suppliers, supplierToAdd]);
-    }
+    const today = new Date().toISOString().split('T')[0];
+    const supplierToAdd: Supplier = {
+      id: (Math.max(...suppliers.map(s => parseInt(s.id))) + 1).toString(),
+      name: newSupplier.name,
+      contact: newSupplier.contact,
+      email: newSupplier.email,
+      products: newSupplier.products || 0,
+      lastOrder: today,
+      status: newSupplier.status as 'active' | 'inactive',
+    };
+
+    const updatedSuppliers = [...suppliers, supplierToAdd];
+    setSuppliers(updatedSuppliers);
+    await saveSuppliers(updatedSuppliers);
     
-    // Reset form and close modal
     setNewSupplier({
       name: '',
       contact: '',
@@ -144,12 +185,14 @@ export default function SuppliersScreen({ navigation }: SuppliersScreenProps) {
       products: 0,
       status: 'active',
     });
-    setEditingSupplier(null);
     setModalVisible(false);
   };
 
   const renderItem = ({ item }: { item: Supplier }) => (
-    <TouchableOpacity style={[styles.supplierCard, { backgroundColor: theme.surface }]}>
+    <TouchableOpacity 
+      style={[styles.supplierCard, { backgroundColor: theme.surface }]}
+      onPress={() => console.log('Card pressed:', item.id)}
+    >
       <View style={styles.supplierHeader}>
         <Text style={[styles.supplierName, { color: theme.text }]}>{item.name}</Text>
         <View style={[
@@ -183,13 +226,19 @@ export default function SuppliersScreen({ navigation }: SuppliersScreenProps) {
       <View style={styles.actionButtons}>
         <TouchableOpacity 
           style={[styles.actionButton, { backgroundColor: theme.primary + '20' }]}
-          onPress={() => handleEditSupplier(item)}
+          onPress={() => {
+            console.log('Edit button pressed for supplier:', item.id);
+            handleEditSupplier(item);
+          }}
         >
           <MaterialCommunityIcons name="pencil" size={20} color={theme.primary} />
         </TouchableOpacity>
         <TouchableOpacity 
           style={[styles.actionButton, { backgroundColor: theme.error + '20' }]}
-          onPress={() => handleDeleteSupplier(item.id)}
+          onPress={() => {
+            console.log('Delete button pressed for supplier:', item.id);
+            handleDeleteSupplier(item.id);
+          }}
         >
           <MaterialCommunityIcons name="delete" size={20} color={theme.error} />
         </TouchableOpacity>
@@ -228,6 +277,13 @@ export default function SuppliersScreen({ navigation }: SuppliersScreenProps) {
         renderItem={renderItem}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.list}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[theme.primary]}
+          />
+        }
       />
 
       {/* Add Supplier Modal */}

@@ -6,12 +6,6 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 
-type ProfileSectionProps = {
-  title: string;
-  icon: keyof typeof MaterialCommunityIcons.glyphMap;
-  value: string;
-};
-
 type ProfileActionProps = {
   title: string;
   icon: keyof typeof Ionicons.glyphMap;
@@ -34,27 +28,14 @@ type ProfileScreenProps = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Profile'>;
 };
 
-const ProfileSection: React.FC<ProfileSectionProps> = ({ title, icon, value }) => {
-  const { theme } = useTheme();
-  return (
-    <View style={[styles.section, { backgroundColor: theme.surface }]}>
-      <View style={styles.sectionHeader}>
-        <MaterialCommunityIcons name={icon} size={24} color={theme.primary} />
-        <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>{title}</Text>
-      </View>
-      <Text style={[styles.sectionValue, { color: theme.text }]}>{value}</Text>
-    </View>
-  );
-};
-
 const ProfileAction: React.FC<ProfileActionProps> = ({ title, icon, onPress }) => {
   const { theme } = useTheme();
   return (
     <TouchableOpacity 
-      style={[styles.actionButton, { borderBottomColor: theme.border }]} 
+      style={[styles.actionButton, { borderBottomColor: theme.surface }]} 
       onPress={onPress}
     >
-      <View style={[styles.actionIcon, { backgroundColor: theme.iconBackground }]}>
+      <View style={[styles.actionIcon, { backgroundColor: theme.surface }]}>
         <Ionicons name={icon} size={24} color={theme.primary} />
       </View>
       <Text style={[styles.actionText, { color: theme.text }]}>{title}</Text>
@@ -103,7 +84,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={[styles.header, { borderBottomColor: theme.border }]}>
+        <View style={[styles.header, { borderBottomColor: theme.surface }]}>
           <TouchableOpacity 
             style={styles.backButton}
             onPress={() => navigation.goBack()}
@@ -120,7 +101,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
         </View>
 
         <View style={styles.profileHeader}>
-          <View style={[styles.avatarContainer, { backgroundColor: theme.iconBackground }]}>
+          <View style={[styles.avatarContainer, { backgroundColor: theme.surface }]}>
             <Image 
               source={require('../assets/profile.png')}
               style={styles.profileImage}
@@ -129,24 +110,6 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
           </View>
           <Text style={[styles.name, { color: theme.text }]}>{user?.name || 'User'}</Text>
           <Text style={[styles.role, { color: theme.textSecondary }]}>Pharmacy Manager</Text>
-        </View>
-
-        <View style={styles.statsContainer}>
-          <ProfileSection 
-            title="Total Sales"
-            value="DH 12,345"
-            icon="cash"
-          />
-          <ProfileSection 
-            title="Products"
-            value="2,534"
-            icon="cube"
-          />
-          <ProfileSection 
-            title="Suppliers"
-            value="12"
-            icon="truck-delivery"
-          />
         </View>
 
         <Text style={[styles.sectionHeaderText, { color: theme.text }]}>Account Settings</Text>
@@ -218,35 +181,6 @@ const styles = StyleSheet.create({
   },
   role: {
     fontSize: 16,
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    padding: 16,
-  },
-  section: {
-    borderRadius: 12,
-    padding: 16,
-    margin: 8,
-    width: '45%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  sectionTitle: {
-    fontSize: 14,
-    marginLeft: 8,
-  },
-  sectionValue: {
-    fontSize: 20,
-    fontWeight: 'bold',
   },
   sectionHeaderText: {
     fontSize: 18,

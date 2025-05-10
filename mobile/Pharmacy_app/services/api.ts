@@ -2,7 +2,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // API Configuration
-const API_BASE_URL = 'http://192.168.1.98:8083/api';
+const API_BASE_URL = 'http://192.168.1.19:8083/api';
 
 // Create axios instance
 const api = axios.create({
@@ -20,6 +20,9 @@ api.interceptors.request.use(
       console.log('Token from storage:', token);
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
+        console.log('Authorization header set:', config.headers.Authorization);
+      } else {
+        console.log('No token found in storage');
       }
       console.log('Request config:', {
         url: config.url,
@@ -97,6 +100,25 @@ export interface StockLot {
   dateReception: string;
 }
 
+export interface SaleItem {
+  id: number;
+  produit: {
+    id: number;
+    nomMedicament: string;
+  };
+  quantite: number;
+  prixVenteTTC: number;
+}
+
+export interface Sale {
+  id: number;
+  date: string;
+  clientName: string;
+  total: number;
+  items: SaleItem[];
+  status: 'completed' | 'pending' | 'cancelled';
+}
+
 // API Methods
 export const authAPI = {
   login: async (username: string, password: string): Promise<AuthResponse> => {
@@ -143,17 +165,47 @@ export const productAPI = {
   delete: async (id: number): Promise<void> => {
     try {
       console.log('Sending delete request for product ID:', id);
-      const response = await api.delete(`/produits/delete/${id}`);
-      console.log('Delete response:', response);
-      if (response.status === 204) {
+      console.log('Delete URL:', `/produits/delete/${id}`);
+      
+      // First check if we have a token
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
+      const response = await api.delete(`/produits/delete/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      console.log('Delete response status:', response.status);
+      console.log('Delete response data:', response.data);
+      
+      if (response.status === 204 || response.status === 200) {
+        console.log('Delete successful');
         return;
       }
+      
+      console.log('Delete failed with status:', response.status);
       throw new Error('Failed to delete product');
     } catch (error: any) {
       console.error('Error in delete product:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        headers: error.response?.headers
+      });
+      
+      if (error.response?.status === 403) {
+        throw new Error('You do not have permission to delete this product');
+      }
+      
       if (error.response?.data?.includes('stock restant disponible')) {
         throw new Error('Cannot delete product with remaining stock');
       }
+      
       throw error;
     }
   },
@@ -168,24 +220,124 @@ export const stockAPI = {
     const response = await api.get(`/stock/${id}`);
     return response.data;
   },
-  create: async (data: Omit<StockLot, 'id'>): Promise<StockLot> => {
-    const response = await api.post('/stock/add', data);
-    return response.data;
+  addStock: async (
+    productId: number,
+    numeroLot: string,
+    dateExpiration: string,
+    quantite: number,
+    prixAchatHT: number
+  ): Promise<StockLot> => {
+    try {
+      const response = await api.post('/stock/add', null, {
+        params: {
+          productId,
+          numeroLot,
+          dateExpiration,
+          quantite,
+          prixAchatHT
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error adding stock:', error);
+      throw error;
+    }
   },
-  update: async (id: number, data: Partial<StockLot>): Promise<StockLot> => {
-    const response = await api.put(`/stock/update/${id}`, data);
-    return response.data;
+  updateStock: async (
+    lotId: number,
+    numeroLot: string,
+    dateExpiration: string,
+    quantite: number,
+    prixAchatHT: number
+  ): Promise<StockLot> => {
+    try {
+      const response = await api.post('/stock/update', null, {
+        params: {
+          lotId,
+          numeroLot,
+          dateExpiration,
+          quantite,
+          prixAchatHT
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating stock:', error);
+      throw error;
+    }
   },
-  remove: async (lotId: number, quantity: number): Promise<void> => {
-    await api.post('/stock/remove', null, {
-      params: {
-        lotId,
-        quantity
-      }
-    });
+  removeStock: async (lotId: number, quantity: number): Promise<StockLot> => {
+    try {
+      const response = await api.post('/stock/remove', null, {
+        params: {
+          lotId,
+          quantity
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error removing stock:', error);
+      throw error;
+    }
   },
   delete: async (id: number): Promise<void> => {
     await api.delete(`/stock/delete/${id}`);
+  },
+};
+
+export const salesAPI = {
+  getAll: async (): Promise<Sale[]> => {
+    try {
+      console.log('Fetching all sales...');
+      const response = await api.get('/ventes/all');
+      console.log('Sales response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error in getAll sales:', error);
+      throw error;
+    }
+  },
+  getById: async (id: number): Promise<Sale> => {
+    const response = await api.get(`/ventes/${id}`);
+    return response.data;
+  },
+  create: async (data: Omit<Sale, 'id'>): Promise<Sale> => {
+    try {
+      console.log('Creating new sale with data:', data);
+      const response = await api.post('/ventes/add', data);
+      console.log('Create sale response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating sale:', error);
+      throw error;
+    }
+  },
+  update: async (id: number, data: Partial<Sale>): Promise<Sale> => {
+    const response = await api.put(`/ventes/update/${id}`, data);
+    return response.data;
+  },
+  delete: async (id: number): Promise<void> => {
+    try {
+      console.log('Sending delete request for sale ID:', id);
+      console.log('Delete URL:', `/ventes/${id}`);
+      const response = await api.delete(`/ventes/${id}`);
+      console.log('Delete response status:', response.status);
+      console.log('Delete response data:', response.data);
+      if (response.status === 204 || response.status === 200) {
+        console.log('Delete successful');
+        return;
+      }
+      console.log('Delete failed with status:', response.status);
+      throw new Error('Failed to delete sale');
+    } catch (error: any) {
+      console.error('Error in delete sale:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      throw error;
+    }
   },
 };
 

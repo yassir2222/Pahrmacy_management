@@ -6,7 +6,6 @@ import { Toaster } from 'sonner-native';
 import HomeScreen from "./screens/HomeScreen"
 import InventoryScreen from "./screens/InventoryScreen"
 import SalesScreen from "./screens/SalesScreen"
-import MedicinesScreen from "./screens/MedicinesScreen"
 import SuppliersScreen from "./screens/SuppliersScreen"
 import ProfileScreen from "./screens/ProfileScreen"
 import LoginScreen from "./screens/LoginScreen"
@@ -42,7 +41,6 @@ function RootStack() {
       <Stack.Screen name="About" component={AboutScreen} />
       <Stack.Screen name="Inventory" component={InventoryScreen} />
       <Stack.Screen name="Sales" component={SalesScreen} />
-      <Stack.Screen name="Medicines" component={MedicinesScreen} />
       <Stack.Screen name="Suppliers" component={SuppliersScreen} />
     </Stack.Navigator>
   );

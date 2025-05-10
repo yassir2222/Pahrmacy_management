@@ -1,16 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from '../context/ThemeContext';
+import { productAPI } from '../services/api';
 
 type RootStackParamList = {
   Home: undefined;
   Profile: undefined;
   Inventory: undefined;
   Sales: undefined;
-  Medicines: undefined;
   Suppliers: undefined;
 };
 
@@ -80,7 +80,21 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const { theme } = useTheme();
   const warningColor = '#f59e0b';
   const infoColor = '#0ea5e9';
+  const [productCount, setProductCount] = useState<number>(0);
   
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const products = await productAPI.getAll();
+        setProductCount(products.length);
+      } catch (error) {
+        console.error('Error fetching products:', error);
+      }
+    };
+    
+    fetchProducts();
+  }, []);
+
   const [recentActivities] = useState<Activity[]>([
     {
       id: '1',
@@ -119,7 +133,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const quickActions: QuickActionItem[] = [
     { title: 'Inventory', icon: 'cube-outline', screen: 'Inventory' },
     { title: 'Sales', icon: 'cart-outline', screen: 'Sales' },
-    { title: 'Medicines', icon: 'medical-outline', screen: 'Medicines' },
     { title: 'Suppliers', icon: 'people-outline', screen: 'Suppliers' },
   ];
 
@@ -127,7 +140,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={[styles.header, { borderBottomColor: theme.border }]}>
-          <Text style={[styles.headerTitle, { color: theme.text }]}>Se7ati</Text>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>Pharmacy Management</Text>
           <TouchableOpacity 
             style={styles.profileButton}
             onPress={() => navigation.navigate('Profile')}
@@ -174,7 +187,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           />
           <DashboardCard 
             title="Total Medicines"
-            value="2,534"
+            value={productCount.toString()}
             subtitle="In inventory"
             icon="pill"
             color={theme.primary}

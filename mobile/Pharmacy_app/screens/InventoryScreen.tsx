@@ -7,6 +7,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { productAPI, Product, stockAPI } from '../services/api';
 import { Picker } from '@react-native-picker/picker';
 import api from '../services/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type RootStackParamList = {
   Home: undefined;
@@ -80,43 +81,43 @@ export default function InventoryScreen({ navigation }: InventoryScreenProps) {
   );
 
   const handleDeleteItem = async (itemId: number) => {
-    Alert.alert(
-      'Delete Product',
-      'Are you sure you want to delete this product?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              console.log('Attempting to delete product with ID:', itemId);
-              await productAPI.delete(itemId);
-              console.log('Product deleted successfully');
-              // Update the local state only after successful deletion
-              setProducts(prevProducts => prevProducts.filter(item => item.id !== itemId));
-              Alert.alert('Success', 'Product deleted successfully');
-            } catch (error: any) {
-              console.error('Error deleting product:', error);
-              if (error.message === 'Cannot delete product with remaining stock') {
-                Alert.alert(
-                  'Cannot Delete',
-                  'This product cannot be deleted because it still has stock available. Please remove all stock first.'
-                );
-              } else {
-                Alert.alert(
-                  'Error',
-                  'Failed to delete product: ' + (error.response?.data || error.message)
-                );
-              }
-            }
-          },
-        },
-      ],
-    );
+    console.log('Delete button clicked for item ID:', itemId);
+    console.log('Current inventory:', products);
+    
+    try {
+      // First delete from database
+      console.log('Deleting from database...');
+      await productAPI.delete(itemId);
+      console.log('Successfully deleted from database');
+
+      // Then update local state
+      const updatedProducts = products.filter(item => item.id !== itemId);
+      console.log('Filtered inventory:', updatedProducts);
+      
+      // Update state immediately
+      setProducts(updatedProducts);
+      console.log('State updated');
+      
+      // Save to storage
+      await AsyncStorage.setItem('inventory', JSON.stringify(updatedProducts));
+      console.log('Saved to storage');
+      
+      Alert.alert('Success', 'Item deleted successfully');
+    } catch (error) {
+      console.error('Delete error:', error);
+      if (error instanceof Error) {
+        if (error.message === 'Cannot delete product with remaining stock') {
+          Alert.alert(
+            'Cannot Delete',
+            'This product cannot be deleted because it still has stock available. Please remove all stock first.'
+          );
+        } else {
+          Alert.alert('Error', 'Failed to delete: ' + error.message);
+        }
+      } else {
+        Alert.alert('Error', 'Failed to delete item');
+      }
+    }
   };
 
   const handleEditItem = (item: Product) => {
@@ -210,7 +211,7 @@ export default function InventoryScreen({ navigation }: InventoryScreenProps) {
               
               // Remove all quantity from each stock lot
               for (const lot of productStockLots) {
-                await stockAPI.remove(lot.id, lot.quantite);
+                await stockAPI.removeStock(lot.id, lot.quantite);
               }
               
               // Update the product's total stock to 0
@@ -238,32 +239,25 @@ export default function InventoryScreen({ navigation }: InventoryScreenProps) {
   };
 
   const renderItem = ({ item }: { item: Product }) => (
-    <TouchableOpacity style={[styles.itemCard, { backgroundColor: theme.surface }]}>
+    <TouchableOpacity 
+      style={[styles.itemCard, { backgroundColor: theme.surface }]}
+      onPress={() => console.log('Card pressed:', item.id)}
+    >
       <View style={styles.itemHeader}>
         <Text style={[styles.itemName, { color: theme.text }]}>{item.nomMedicament}</Text>
         <View style={[
           styles.statusBadge,
-          { backgroundColor: 
-            item.quantiteTotaleEnStock > item.seuilStock ? theme.success + '20' : 
-            item.quantiteTotaleEnStock > 0 ? theme.error + '20' : 
-            theme.error + '20' 
-          }
+          { backgroundColor: item.quantiteTotaleEnStock > item.seuilStock ? theme.success + '20' : theme.error + '20' }
         ]}>
           <Text style={[
             styles.statusText,
-            { color: 
-              item.quantiteTotaleEnStock > item.seuilStock ? theme.success : 
-              item.quantiteTotaleEnStock > 0 ? theme.error : 
-              theme.error 
-            }
+            { color: item.quantiteTotaleEnStock > item.seuilStock ? theme.success : theme.error }
           ]}>
-            {item.quantiteTotaleEnStock > item.seuilStock ? 'In Stock' : 
-             item.quantiteTotaleEnStock > 0 ? 'Low Stock' : 
-             'Out of Stock'}
+            {item.quantiteTotaleEnStock > item.seuilStock ? 'In Stock' : 'Low Stock'}
           </Text>
         </View>
       </View>
-      <View style={styles.details}>
+      <View style={styles.itemDetails}>
         <Text style={[styles.detailText, { color: theme.textSecondary }]}>
           Form: {item.forme}
         </Text>
@@ -274,7 +268,7 @@ export default function InventoryScreen({ navigation }: InventoryScreenProps) {
           EAN: {item.codeEAN}
         </Text>
       </View>
-      <View style={styles.footer}>
+      <View style={styles.itemFooter}>
         <Text style={[styles.quantity, { color: theme.text }]}>
           Quantity: {item.quantiteTotaleEnStock} (Min: {item.seuilStock})
         </Text>
@@ -285,7 +279,10 @@ export default function InventoryScreen({ navigation }: InventoryScreenProps) {
       <View style={styles.actionButtons}>
         <TouchableOpacity 
           style={[styles.actionButton, { backgroundColor: theme.primary + '20' }]}
-          onPress={() => handleEditItem(item)}
+          onPress={() => {
+            console.log('Edit button pressed for item:', item.id);
+            handleEditItem(item);
+          }}
         >
           <MaterialCommunityIcons name="pencil" size={20} color={theme.primary} />
         </TouchableOpacity>
@@ -299,7 +296,10 @@ export default function InventoryScreen({ navigation }: InventoryScreenProps) {
         )}
         <TouchableOpacity 
           style={[styles.actionButton, { backgroundColor: theme.error + '20' }]}
-          onPress={() => handleDeleteItem(item.id)}
+          onPress={() => {
+            console.log('Delete button pressed for item:', item.id);
+            handleDeleteItem(item.id);
+          }}
         >
           <MaterialCommunityIcons name="delete" size={20} color={theme.error} />
         </TouchableOpacity>
@@ -558,18 +558,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
   },
-  description: {
-    fontSize: 14,
-    marginBottom: 8,
-  },
-  details: {
+  itemDetails: {
     marginBottom: 8,
   },
   detailText: {
     fontSize: 14,
     marginBottom: 4,
   },
-  footer: {
+  itemFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',

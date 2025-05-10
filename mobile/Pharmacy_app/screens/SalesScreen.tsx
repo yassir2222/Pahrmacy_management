@@ -1,25 +1,11 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Modal, ScrollView, Alert } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Modal, ScrollView, Alert, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-
-interface SaleItem {
-  id: string;
-  name: string;
-  quantity: number;
-  price: number;
-}
-
-interface Sale {
-  id: string;
-  date: string;
-  customerName: string;
-  total: number;
-  items: SaleItem[];
-  status: 'completed' | 'pending' | 'cancelled';
-}
+import { salesAPI, Sale, SaleItem } from '../services/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type RootStackParamList = {
   Home: undefined;
@@ -33,79 +19,139 @@ interface SalesScreenProps {
   navigation: SalesScreenNavigationProp;
 }
 
-const mockSales: Sale[] = [
-  {
-    id: '1',
-    date: '2024-03-15',
-    customerName: 'Lambrass Yassir',
-    total: 150.00,
-    items: [
-      { id: '1', name: 'Paracetamol 500mg', quantity: 2, price: 25.00 },
-      { id: '2', name: 'Amoxicillin 250mg', quantity: 1, price: 100.00 },
-    ],
-    status: 'completed' as const,
-  },
-  {
-    id: '2',
-    date: '2024-03-14',
-    customerName: 'Alassri Ghali',
-    total: 75.50,
-    items: [
-      { id: '3', name: 'Aspirin 100mg', quantity: 3, price: 25.17 },
-    ],
-    status: 'pending' as const,
-  },
-  {
-    id: '3',
-    date: '2024-03-13',
-    customerName: 'El Houfi Ashraf',
-    total: 200.00,
-    items: [
-      { id: '4', name: 'Ibuprofen 400mg', quantity: 4, price: 50.00 },
-    ],
-    status: 'cancelled' as const,
-  },
-];
-
 export default function SalesScreen({ navigation }: SalesScreenProps) {
   const { theme } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
-  const [sales, setSales] = useState<Sale[]>(mockSales);
+  const [sales, setSales] = useState<Sale[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingSale, setEditingSale] = useState<Sale | null>(null);
   const [newSale, setNewSale] = useState<Partial<Sale>>({
-    customerName: '',
+    clientName: '',
     items: [],
     status: 'pending',
   });
   const [newItem, setNewItem] = useState<Partial<SaleItem>>({
-    name: '',
-    quantity: 1,
-    price: 0,
+    produit: { id: 0, nomMedicament: '' },
+    quantite: 1,
+    prixVenteTTC: 0,
   });
 
+  const fetchSales = useCallback(async () => {
+    console.log('Fetching sales...');
+    setLoading(true);
+    try {
+      const storedSales = await AsyncStorage.getItem('sales');
+      console.log('Retrieved sales from AsyncStorage:', storedSales);
+      
+      if (storedSales) {
+        const parsedSales = JSON.parse(storedSales);
+        console.log('Parsed sales:', parsedSales);
+        setSales(parsedSales);
+      } else {
+        console.log('No stored sales found, using initial data');
+        // Initialize with mock data if no stored data exists
+        const initialSales = [
+          {
+            id: 1,
+            date: '2024-03-20',
+            clientName: 'Ghali Elasri',
+            total: 150.00,
+            items: [
+              {
+                id: 1,
+                produit: {
+                  id: 1,
+                  nomMedicament: 'Paracetamol'
+                },
+                quantite: 2,
+                prixVenteTTC: 75.00
+              }
+            ],
+            status: 'completed' as const
+          },
+          {
+            id: 2,
+            date: '2024-03-19',
+            clientName: 'Yassir Lambrass',
+            total: 200.00,
+            items: [
+              {
+                id: 1,
+                produit: {
+                  id: 2,
+                  nomMedicament: 'Ibuprofen'
+                },
+                quantite: 1,
+                prixVenteTTC: 200.00
+              }
+            ],
+            status: 'pending' as const
+          }
+        ];
+        setSales(initialSales);
+        await AsyncStorage.setItem('sales', JSON.stringify(initialSales));
+        console.log('Initial sales saved to AsyncStorage');
+      }
+    } catch (error) {
+      console.error('Error in fetchSales:', error);
+      Alert.alert('Error', 'Failed to fetch sales: ' + (error as Error).message);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSales();
+  }, [fetchSales]);
+
+  const saveSales = async (updatedSales: Sale[]) => {
+    try {
+      await AsyncStorage.setItem('sales', JSON.stringify(updatedSales));
+    } catch (error) {
+      console.error('Error saving sales:', error);
+      Alert.alert('Error', 'Failed to save sales: ' + (error as Error).message);
+    }
+  };
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchSales();
+  }, [fetchSales]);
+
   const filteredSales = sales.filter(sale =>
-    sale.customerName.toLowerCase().includes(searchQuery.toLowerCase())
+    sale.clientName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleDeleteSale = (saleId: string) => {
-    Alert.alert(
-      'Delete Sale',
-      'Are you sure you want to delete this sale?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            setSales(sales.filter(sale => sale.id !== saleId));
-          },
-        },
-      ],
-    );
+  const handleDeleteSale = (saleId: number) => {
+    console.log('Delete button clicked for sale ID:', saleId);
+    console.log('Current sales:', sales);
+    
+    // Direct deletion without confirmation for testing
+    try {
+      const updatedSales = sales.filter(sale => sale.id !== saleId);
+      console.log('Filtered sales:', updatedSales);
+      
+      // Update state immediately
+      setSales(updatedSales);
+      console.log('State updated');
+      
+      // Save to storage
+      AsyncStorage.setItem('sales', JSON.stringify(updatedSales))
+        .then(() => {
+          console.log('Saved to storage');
+          Alert.alert('Success', 'Sale deleted');
+        })
+        .catch(err => {
+          console.error('Storage error:', err);
+          Alert.alert('Error', 'Failed to save');
+        });
+    } catch (error) {
+      console.error('Delete error:', error);
+      Alert.alert('Error', 'Failed to delete');
+    }
   };
 
   const handleEditSale = (sale: Sale) => {
@@ -115,78 +161,70 @@ export default function SalesScreen({ navigation }: SalesScreenProps) {
   };
 
   const handleAddItem = () => {
-    if (!newItem.name || !newItem.quantity || !newItem.price) {
+    if (!newItem.produit?.nomMedicament || !newItem.quantite || !newItem.prixVenteTTC) {
       Alert.alert('Error', 'Please fill in all item fields');
       return;
     }
 
     const itemToAdd: SaleItem = {
-      id: (newSale.items?.length || 0 + 1).toString(),
-      name: newItem.name,
-      quantity: newItem.quantity,
-      price: newItem.price,
+      id: (newSale.items?.length || 0) + 1,
+      produit: {
+        id: newItem.produit.id || 0,
+        nomMedicament: newItem.produit.nomMedicament
+      },
+      quantite: newItem.quantite,
+      prixVenteTTC: newItem.prixVenteTTC,
     };
 
-    setNewSale({
-      ...newSale,
-      items: [...(newSale.items || []), itemToAdd],
-    });
+    setNewSale(prevSale => ({
+      ...prevSale,
+      items: [...(prevSale.items || []), itemToAdd],
+    }));
 
     setNewItem({
-      name: '',
-      quantity: 1,
-      price: 0,
+      produit: { id: 0, nomMedicament: '' },
+      quantite: 1,
+      prixVenteTTC: 0,
     });
   };
 
-  const handleAddSale = () => {
-    if (!newSale.customerName || !newSale.items?.length) {
+  const handleAddSale = async () => {
+    if (!newSale.clientName || !newSale.items?.length) {
       Alert.alert('Error', 'Please fill in all required fields and add at least one item');
       return;
     }
 
-    if (editingSale) {
-      // Update existing sale
-      setSales(sales.map(sale => 
-        sale.id === editingSale.id
-          ? {
-              ...sale,
-              customerName: newSale.customerName || sale.customerName,
-              items: newSale.items || sale.items,
-              status: newSale.status || sale.status,
-              total: newSale.items?.reduce((sum, item) => sum + (item.price * item.quantity), 0) || sale.total,
-            }
-          : sale
-      ));
-    } else {
-      // Add new sale
-      const today = new Date().toISOString().split('T')[0];
-      const total = newSale.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const today = new Date().toISOString().split('T')[0];
+    const total = newSale.items.reduce((sum, item) => sum + (item.prixVenteTTC * item.quantite), 0);
 
-      const saleToAdd: Sale = {
-        id: (sales.length + 1).toString(),
-        date: today,
-        customerName: newSale.customerName,
-        total,
-        items: newSale.items,
-        status: newSale.status as 'completed' | 'pending' | 'cancelled',
-      };
-      setSales([...sales, saleToAdd]);
-    }
+    const saleToAdd: Sale = {
+      id: Math.max(...sales.map(s => s.id)) + 1,
+      date: today,
+      clientName: newSale.clientName,
+      total,
+      items: newSale.items,
+      status: 'pending',
+    };
+
+    const updatedSales = [...sales, saleToAdd];
+    setSales(updatedSales);
+    await saveSales(updatedSales);
     
     setNewSale({
-      customerName: '',
+      clientName: '',
       items: [],
       status: 'pending',
     });
-    setEditingSale(null);
     setModalVisible(false);
   };
 
   const renderItem = ({ item }: { item: Sale }) => (
-    <TouchableOpacity style={[styles.saleCard, { backgroundColor: theme.surface }]}>
+    <TouchableOpacity 
+      style={[styles.saleCard, { backgroundColor: theme.surface }]}
+      onPress={() => console.log('Card pressed:', item.id)}
+    >
       <View style={styles.saleHeader}>
-        <Text style={[styles.customerName, { color: theme.text }]}>{item.customerName}</Text>
+        <Text style={[styles.customerName, { color: theme.text }]}>{item.clientName}</Text>
         <View style={[
           styles.statusBadge,
           { backgroundColor: 
@@ -218,20 +256,26 @@ export default function SalesScreen({ navigation }: SalesScreenProps) {
       <View style={styles.itemsList}>
         {item.items.map((saleItem) => (
           <Text key={saleItem.id} style={[styles.itemText, { color: theme.textSecondary }]}>
-            {saleItem.quantity}x {saleItem.name} - ${(saleItem.price * saleItem.quantity).toFixed(2)}
+            {saleItem.quantite}x {saleItem.produit.nomMedicament} - ${(saleItem.prixVenteTTC * saleItem.quantite).toFixed(2)}
           </Text>
         ))}
       </View>
       <View style={styles.actionButtons}>
         <TouchableOpacity 
           style={[styles.actionButton, { backgroundColor: theme.primary + '20' }]}
-          onPress={() => handleEditSale(item)}
+          onPress={() => {
+            console.log('Edit button pressed for sale:', item.id);
+            handleEditSale(item);
+          }}
         >
           <MaterialCommunityIcons name="pencil" size={20} color={theme.primary} />
         </TouchableOpacity>
         <TouchableOpacity 
           style={[styles.actionButton, { backgroundColor: theme.error + '20' }]}
-          onPress={() => handleDeleteSale(item.id)}
+          onPress={() => {
+            console.log('Delete button pressed for sale:', item.id);
+            handleDeleteSale(item.id);
+          }}
         >
           <MaterialCommunityIcons name="delete" size={20} color={theme.error} />
         </TouchableOpacity>
@@ -239,9 +283,17 @@ export default function SalesScreen({ navigation }: SalesScreenProps) {
     </TouchableOpacity>
   );
 
+  if (loading) {
+    return (
+      <View style={[styles.container, { backgroundColor: theme.background, justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={{ color: theme.text }}>Loading sales...</Text>
+      </View>
+    );
+  }
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
+      <View style={[styles.header, { backgroundColor: theme.surface }]}>
         <TouchableOpacity onPress={() => navigation.navigate('Home')}>
           <Ionicons name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
@@ -251,11 +303,8 @@ export default function SalesScreen({ navigation }: SalesScreenProps) {
         </TouchableOpacity>
       </View>
 
-      <View style={[styles.searchContainer, { 
-        backgroundColor: theme.surface,
-        borderColor: theme.border
-      }]}>
-        <Ionicons name="search" size={20} color={theme.textSecondary} style={styles.searchIcon} />
+      <View style={[styles.searchContainer, { backgroundColor: theme.surface }]}>
+        <Ionicons name="search" size={20} color={theme.textSecondary} />
         <TextInput
           style={[styles.searchInput, { color: theme.text }]}
           placeholder="Search sales..."
@@ -268,8 +317,15 @@ export default function SalesScreen({ navigation }: SalesScreenProps) {
       <FlatList
         data={filteredSales}
         renderItem={renderItem}
-        keyExtractor={item => item.id}
+        keyExtractor={item => item.id.toString()}
         contentContainerStyle={styles.list}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[theme.primary]}
+          />
+        }
       />
 
       {/* Add Sale Modal */}
@@ -279,28 +335,23 @@ export default function SalesScreen({ navigation }: SalesScreenProps) {
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={[styles.modalContainer, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]}>
-          <View style={[styles.modalContent, { backgroundColor: theme.background }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
-              <Text style={[styles.modalTitle, { color: theme.text }]}>New Sale</Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Ionicons name="close" size={24} color={theme.text} />
-              </TouchableOpacity>
-            </View>
-            
+        <View style={styles.modalContainer}>
+          <View style={[styles.modalContent, { backgroundColor: theme.surface }]}>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>
+              {editingSale ? 'Edit Sale' : 'Add New Sale'}
+            </Text>
             <ScrollView style={styles.modalBody}>
               <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: theme.text }]}>Customer Name *</Text>
+                <Text style={[styles.inputLabel, { color: theme.text }]}>Client Name *</Text>
                 <TextInput
                   style={[styles.input, { 
-                    backgroundColor: theme.surface,
                     color: theme.text,
-                    borderColor: theme.border
+                    backgroundColor: theme.background
                   }]}
-                  placeholder="Enter customer name"
+                  placeholder="Enter client name"
                   placeholderTextColor={theme.textSecondary}
-                  value={newSale.customerName}
-                  onChangeText={(text) => setNewSale({...newSale, customerName: text})}
+                  value={newSale.clientName}
+                  onChangeText={(text) => setNewSale({...newSale, clientName: text})}
                 />
               </View>
 
@@ -308,131 +359,71 @@ export default function SalesScreen({ navigation }: SalesScreenProps) {
                 <Text style={[styles.sectionTitle, { color: theme.text }]}>Items</Text>
                 {newSale.items?.map((item) => (
                   <View key={item.id} style={styles.itemRow}>
-                    <Text style={[styles.itemName, { color: theme.text }]}>{item.name}</Text>
+                    <Text style={[styles.itemName, { color: theme.text }]}>{item.produit.nomMedicament}</Text>
                     <Text style={[styles.itemDetails, { color: theme.textSecondary }]}>
-                      {item.quantity}x ${item.price.toFixed(2)}
+                      {item.quantite}x ${item.prixVenteTTC.toFixed(2)}
                     </Text>
                   </View>
                 ))}
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: theme.text }]}>Add Item</Text>
-                <TextInput
-                  style={[styles.input, { 
-                    backgroundColor: theme.surface,
-                    color: theme.text,
-                    borderColor: theme.border
-                  }]}
-                  placeholder="Item name"
-                  placeholderTextColor={theme.textSecondary}
-                  value={newItem.name}
-                  onChangeText={(text) => setNewItem({...newItem, name: text})}
-                />
-                <View style={styles.itemInputRow}>
+                <View style={styles.addItemSection}>
                   <TextInput
-                    style={[styles.input, styles.quantityInput, { 
-                      backgroundColor: theme.surface,
+                    style={[styles.input, { 
                       color: theme.text,
-                      borderColor: theme.border
+                      backgroundColor: theme.background
                     }]}
-                    placeholder="Qty"
+                    placeholder="Item name"
                     placeholderTextColor={theme.textSecondary}
-                    keyboardType="numeric"
-                    value={newItem.quantity?.toString()}
-                    onChangeText={(text) => setNewItem({...newItem, quantity: parseInt(text) || 1})}
+                    value={newItem.produit?.nomMedicament}
+                    onChangeText={(text) => setNewItem({
+                      ...newItem,
+                      produit: { ...newItem.produit, nomMedicament: text }
+                    })}
                   />
-                  <TextInput
-                    style={[styles.input, styles.priceInput, { 
-                      backgroundColor: theme.surface,
-                      color: theme.text,
-                      borderColor: theme.border
-                    }]}
-                    placeholder="Price"
-                    placeholderTextColor={theme.textSecondary}
-                    keyboardType="numeric"
-                    value={newItem.price?.toString()}
-                    onChangeText={(text) => setNewItem({...newItem, price: parseFloat(text) || 0})}
-                  />
-                </View>
-                <TouchableOpacity 
-                  style={[styles.addItemButton, { backgroundColor: theme.primary }]}
-                  onPress={handleAddItem}
-                >
-                  <Text style={styles.addItemButtonText}>Add Item</Text>
-                </TouchableOpacity>
-              </View>
-              
-              <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: theme.text }]}>Status</Text>
-                <View style={styles.statusToggle}>
-                  <TouchableOpacity 
-                    style={[
-                      styles.statusOption, 
-                      { 
-                        backgroundColor: newSale.status === 'completed' ? theme.primary : theme.surface,
-                        borderColor: theme.border
-                      }
-                    ]}
-                    onPress={() => setNewSale({...newSale, status: 'completed'})}
+                  <View style={styles.itemInputRow}>
+                    <TextInput
+                      style={[styles.input, { 
+                        color: theme.text,
+                        backgroundColor: theme.background
+                      }]}
+                      placeholder="Quantity"
+                      placeholderTextColor={theme.textSecondary}
+                      keyboardType="numeric"
+                      value={newItem.quantite?.toString()}
+                      onChangeText={(text) => setNewItem({...newItem, quantite: parseInt(text) || 1})}
+                    />
+                    <TextInput
+                      style={[styles.input, { 
+                        color: theme.text,
+                        backgroundColor: theme.background
+                      }]}
+                      placeholder="Price"
+                      placeholderTextColor={theme.textSecondary}
+                      keyboardType="numeric"
+                      value={newItem.prixVenteTTC?.toString()}
+                      onChangeText={(text) => setNewItem({...newItem, prixVenteTTC: parseFloat(text) || 0})}
+                    />
+                  </View>
+                  <TouchableOpacity
+                    style={[styles.addItemButton, { backgroundColor: theme.primary }]}
+                    onPress={handleAddItem}
                   >
-                    <Text style={[
-                      styles.statusOptionText, 
-                      { color: newSale.status === 'completed' ? 'white' : theme.text }
-                    ]}>
-                      Completed
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={[
-                      styles.statusOption, 
-                      { 
-                        backgroundColor: newSale.status === 'pending' ? theme.primary : theme.surface,
-                        borderColor: theme.border
-                      }
-                    ]}
-                    onPress={() => setNewSale({...newSale, status: 'pending'})}
-                  >
-                    <Text style={[
-                      styles.statusOptionText, 
-                      { color: newSale.status === 'pending' ? 'white' : theme.text }
-                    ]}>
-                      Pending
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={[
-                      styles.statusOption, 
-                      { 
-                        backgroundColor: newSale.status === 'cancelled' ? theme.primary : theme.surface,
-                        borderColor: theme.border
-                      }
-                    ]}
-                    onPress={() => setNewSale({...newSale, status: 'cancelled'})}
-                  >
-                    <Text style={[
-                      styles.statusOptionText, 
-                      { color: newSale.status === 'cancelled' ? 'white' : theme.text }
-                    ]}>
-                      Cancelled
-                    </Text>
+                    <Text style={styles.addItemButtonText}>Add Item</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             </ScrollView>
-            
-            <View style={[styles.modalFooter, { borderTopColor: theme.border }]}>
-              <TouchableOpacity 
-                style={[styles.cancelButton, { borderColor: theme.border }]}
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: theme.error }]}
                 onPress={() => setModalVisible(false)}
               >
-                <Text style={[styles.cancelButtonText, { color: theme.text }]}>Cancel</Text>
+                <Text style={styles.modalButtonText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.saveButton, { backgroundColor: theme.primary }]}
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: theme.primary }]}
                 onPress={handleAddSale}
               >
-                <Text style={styles.saveButtonText}>Save</Text>
+                <Text style={styles.modalButtonText}>Save</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -670,5 +661,24 @@ const styles = StyleSheet.create({
   actionButton: {
     padding: 8,
     borderRadius: 8,
+  },
+  addItemSection: {
+    marginBottom: 16,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 16,
+  },
+  modalButton: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  modalButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: 'white',
   },
 });
