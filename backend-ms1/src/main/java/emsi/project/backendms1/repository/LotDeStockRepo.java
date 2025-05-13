@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -16,4 +17,6 @@ public interface LotDeStockRepo extends JpaRepository<LotDeStock,Long> {
     Integer calculateTotalStockQuantityForProduct(@Param("productId") Long productId);
 
     Optional<LotDeStock> findByProduitIdAndNumeroLot(Long produitId, String numeroLot);
+    List<LotDeStock> findByProduitId(Long produitId);
+
 }

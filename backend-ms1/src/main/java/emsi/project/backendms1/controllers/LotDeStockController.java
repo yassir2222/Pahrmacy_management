@@ -1,19 +1,20 @@
 package emsi.project.backendms1.controllers;
 
 import emsi.project.backendms1.models.LotDeStock;
+import emsi.project.backendms1.models.Produit;
+import emsi.project.backendms1.service.ProduitService;
 import emsi.project.backendms1.service.StockService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/stock")
@@ -22,7 +23,11 @@ public class LotDeStockController {
     @Autowired
     private StockService stockService;
 
+    @Autowired
+    private ProduitService produitService;
+
     @PostMapping("/add")
+    @PreAuthorize("hasAnyRole('ROLE_USER')")
     public ResponseEntity<?> addStock(
             @RequestParam Long productId,
             @RequestParam String numeroLot,
@@ -40,6 +45,7 @@ public class LotDeStockController {
         }
     }
     @PostMapping("/update")
+    @PreAuthorize("hasAnyRole('ROLE_USER')")
     public ResponseEntity<?> updateStock(
             @RequestParam Long lotId,
             @RequestParam String numeroLot,
@@ -55,6 +61,7 @@ public class LotDeStockController {
         }
     }
             @PostMapping("/remove")
+            @PreAuthorize("hasAnyRole('ROLE_USER')")
     public ResponseEntity<?> removeStock(@RequestParam Long lotId, @RequestParam int quantity) {
         try {
             LotDeStock updatedStock = stockService.removeStockFromLot(lotId, quantity);
@@ -64,5 +71,20 @@ public class LotDeStockController {
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
         }
+    }
+
+
+    @GetMapping("/{produitId}/stocks")
+    @PreAuthorize("hasAnyRole('ROLE_USER')")
+    public ResponseEntity<List<LotDeStock>> getAllStocksForProduit(@PathVariable Long produitId) {
+         Produit produit = produitService.getProduitById(produitId);
+         if (produit == null) {
+            return ResponseEntity.notFound().build();
+        }
+        List<LotDeStock> stocks = stockService.findAllStocksByProduitId(produitId);
+        if (stocks.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(stocks);
     }
 }

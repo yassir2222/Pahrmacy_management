@@ -80,6 +80,12 @@ public class ProduitService {
         productRepository.save(product);
     }
 
+    public Produit getProduitById(Long id) {
+        return productRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Produit non trouvé avec l'ID : " + id));
+    }
+
+
     //    public List<Product> searchProducts(String searchTerm) {
 //        if (searchTerm == null || searchTerm.trim().isEmpty()) {
 //            return productRepository.findAll();
@@ -87,10 +93,7 @@ public class ProduitService {
 //        return productRepository.searchProducts(searchTerm.trim());
 //    }
 
-//    public Product findProductById(Long id) {
-//        return productRepository.findById(id)
-//                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
-//    }
+
 //
 //    public Product findProductByMedicineId(String medicineId) {
 //        return productRepository.findByMedicineId(medicineId)

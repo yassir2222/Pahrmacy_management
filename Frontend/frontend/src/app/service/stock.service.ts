@@ -15,7 +15,7 @@ export class StockService {
   private apiUrlRoot = environment.apiUrl;
   private baseApiUrl = `${this.apiUrlRoot}`;
   private produitsUrl = `${this.baseApiUrl}/produits/all`;
-  private lotsUrl = `${this.baseApiUrl}/lots`;
+  private lotsUrl = `${this.baseApiUrl}/stock`;
   private mouvementUrl = `${this.baseApiUrl}/lots/mouvement`;
 
   constructor(private http: HttpClient) {}
@@ -37,7 +37,7 @@ export class StockService {
    */
   getLots(produitId: number): Observable<LotDeStock[]> {
     console.log(`Tentative de chargement des lots pour le produit ID: ${produitId}`);
-    const url = `${this.lotsUrl}/produit/${produitId}`;
+    const url = `${this.lotsUrl}/${produitId}/stocks`;
     console.log(`URL appelée: ${url}`);
     
     return this.http.get<LotDeStock[]>(url)

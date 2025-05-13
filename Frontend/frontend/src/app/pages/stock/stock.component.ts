@@ -240,6 +240,7 @@ export class StockComponent implements OnInit {
   ): boolean {
     if (!dateExpirationStr) return false;
     const dateExpiration = new Date(dateExpirationStr);
+    console.log(dateExpiration)
     const maintenant = new Date();
     const dateSeuil = new Date();
     dateSeuil.setDate(maintenant.getDate() + joursSeuil);
@@ -285,12 +286,13 @@ export class StockComponent implements OnInit {
 
   getBadgeValue(lot: LotDeStock): string {
     const expirationProche = this.isDateExpirationProche(lot.dateExpiration);
+    console.log(expirationProche)
     const stockBas = this.isStockBas(lot.quantite);
 
     if (expirationProche && stockBas) return 'Stock bas / Exp. proche';
     if (expirationProche) return 'Exp. proche';
     if (stockBas) return 'Stock bas';
 
-    return ''; // Return empty string instead of null
+    return 'En stock'; // Return empty string instead of null
   }
 }

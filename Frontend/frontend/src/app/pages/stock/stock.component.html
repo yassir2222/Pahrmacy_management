@@ -47,15 +47,13 @@
         <div class="field">
           <strong>Prix Achat HT:</strong>
           {{
-            (selectedProduit.prixAchatHT
-              | currency : "EUR" : "symbol" : "1.2-2" : "fr") || "N/A"
+            (selectedProduit.prixAchatHT + " MAD"|| "N/A")
           }}
         </div>
         <div class="field">
           <strong>Prix Vente TTC:</strong>
           {{
-            (selectedProduit.prixVenteTTC
-              | currency : "EUR" : "symbol" : "1.2-2" : "fr") || "N/A"
+            (selectedProduit.prixVenteTTC +" MAD"|| "N/A")
           }}
         </div>
         <div class="field">

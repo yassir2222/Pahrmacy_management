@@ -1,5 +1,6 @@
 package emsi.project.backendms1.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import emsi.project.backendms1.enums.FormeEnum;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -23,6 +24,7 @@ public class Produit {
     @Column(nullable = false)
     private String nomMedicament;
 
+    @JsonIgnore
     @Column(nullable = true)
     @OneToMany(mappedBy = "produit", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<LotDeStock> lotDeStocks = new ArrayList<>();
