@@ -94,32 +94,74 @@ export class ProductService {
       );
   }
 
-  deleteProduct(id: number): Observable<void> {
-    const url = `${this.apiUrl}/delete/${id}`;
-    console.log(`Attempting to delete product with ID: ${id}`);
-    return this.http.delete<void>(url)
-      .pipe(
-        tap(_ => console.log(`Successfully deleted product id=${id}`)),
-        catchError(error => {
-          console.error(`Error deleting product with ID ${id}:`, error);
-          if (error.error instanceof Object) {
-            console.error('Error body:', JSON.stringify(error.error, null, 2));
-          } else if (typeof error.error === 'string') {
-            console.error('Error message from server:', error.error);
-          }
-          return this.handleError(error);
-        })
-      );
+ deleteProduct(id: number): Observable<void> {
+  const url = `${this.apiUrl}/delete/${id}`;
+  console.log(`Attempting to delete product with ID: ${id}`);
+  
+  let headers = {};
+  
+  // Only try to access localStorage in browser context
+  if (isPlatformBrowser(this.platformId)) {
+    const token = localStorage.getItem('auth_token');
+    console.log('Using auth token:', token ? 'Token found' : 'No token found');
+    
+    if (token) {
+      headers = {
+        'Authorization': `Bearer ${token}`
+      };
+    }
+  }
+  
+  console.log('Sending request with headers:', headers);
+  
+  return this.http.delete<void>(url, { headers })
+    .pipe(
+      tap(_ => console.log(`Successfully deleted product id=${id}`)),
+      catchError(error => {
+        console.error(`Error deleting product with ID ${id}:`, error);
+        return this.handleError(error);
+      })
+    );
+}
+
+// Similarly update the batch delete method
+deleteSelectedProducts(ids: number[]): Observable<void> {
+  const url = `${this.apiUrl}/batch`;
+  
+  let headers = {};
+  
+  // Only try to access localStorage in browser context
+  if (isPlatformBrowser(this.platformId)) {
+    const token = localStorage.getItem('auth_token');
+    
+    if (token) {
+      headers = {
+        'Authorization': `Bearer ${token}`
+      };
+    }
   }
 
-  deleteSelectedProducts(ids: number[]): Observable<void> {
-      const url = `${this.apiUrl}/batch`;
-      return this.http.request<void>('delete', url, { body: ids }) 
-         .pipe(
-            tap(_ => console.log(`Deleted products with ids: ${ids.join(', ')}`)),
-            catchError(this.handleError)
-        );
+
+  
+  return this.http.request<void>('delete', url, { 
+    body: ids,
+    headers: headers 
+  }).pipe(
+    tap(_ => console.log(`Deleted products with ids: ${ids.join(', ')}`)),
+    catchError(this.handleError)
+  );
+}
+
+private getAuthHeaders(): Record<string, string> {
+  if (isPlatformBrowser(this.platformId)) {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      return { 'Authorization': `Bearer ${token}` };
+    }
   }
+  return {};
+}
+
 
   // Helper method to format product data consistently
   private formatProductData(product: Produit): Produit {

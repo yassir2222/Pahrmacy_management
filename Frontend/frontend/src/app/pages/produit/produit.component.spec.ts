@@ -225,17 +225,6 @@ export class ProduitComponent implements OnInit {
     }
   }
 
-  // findIndexById no longer needed if reloading list after changes
-  // createId no longer needed, backend handles ID generation
-
-  // Remove getSeverity if not using inventoryStatus
-  /*
-  getSeverity(status: string | undefined): string {
-     // ... implementation based on backend status if any
-  }
-  */
-
-  // Keep onUpload if needed, implement actual upload logic
   onUpload(event: any) {
       console.log('File upload triggered (needs implementation):', event);
       this.messageService.add({severity: 'info', summary: 'Info', detail: 'File import not implemented yet.'});
@@ -245,4 +234,16 @@ export class ProduitComponent implements OnInit {
    applyFilterGlobal($event: any, stringVal: string) {
      this.dt?.filterGlobal(($event.target as HTMLInputElement).value, stringVal);
    }
+   
+getStockStatusText(product: any): string {
+  if (!product.quantiteTotaleEnStock) return 'Rupture';
+  if (product.quantiteTotaleEnStock <= 5) return 'Faible';
+  return 'En stock';
+}
+
+getStockSeverity(product: any): string {
+  if (!product.quantiteTotaleEnStock) return 'danger';
+  if (product.quantiteTotaleEnStock <= 5) return 'warning';
+  return 'success';
+}
 }
