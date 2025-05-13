@@ -24,8 +24,9 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms'; // Required for ngModel
 import { HttpErrorResponse } from '@angular/common/http'; // Import HttpErrorResponse
 import { FormeEnum } from '../../models/enums/FormeEnum';
-
-
+// PDF Export
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 @Component({
   selector: 'app-produit',
   standalone: true, // Assuming standalone, adjust if using modules
@@ -77,17 +78,25 @@ export class ProduitComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    this.loadProducts(); // Load products from backend on init
+    this.loadProducts(); 
 
     // Prepare options for the FormeEnum dropdown/radio buttons
     this.formeOptions = Object.keys(FormeEnum).map(key => ({
-        label: key, // Or format label nicely e.g., .replace('_', ' ')
+        label: key, 
         value: FormeEnum[key as keyof typeof FormeEnum]
     }));
 
-    // REMOVE mock statuses if not applicable
-    // this.statuses = [ ... ];
   }
+
+    formes: any[] = [
+    { label: 'Comprimé', value: 'TABLET' },
+    { label: 'Gélule', value: 'CAPSULE' },
+    { label: 'Sirop', value: 'SYRUP' },
+    { label: 'Injection', value: 'INJECTION' },
+    { label: 'Crème', value: 'CREAM' },
+    { label: 'Poudre', value: 'POWDER' },
+    { label: 'Sachet', value: 'SACHET' }
+  ];
 
   loadProducts() {
       this.productService.getProducts().subscribe({
@@ -245,4 +254,51 @@ getStockSeverity(product: any): string {
   if (product.quantiteTotaleEnStock <= 5) return 'warning';
   return 'success';
 }
+
+ exportPdf() {
+    if (!this.products || this.products.length === 0) {
+      this.messageService.add({ severity: 'warn', summary: 'Avertissement', detail: 'Aucun produit à exporter.', life: 3000 });
+      return;
+    }
+
+    const doc = new jsPDF();
+    const tableColumn = ["Code EAN", "Nom Médicament", "Forme", "Dosage", "Prix TTC", "Stock", "Statut"];
+    const tableRows: any[][] = [];
+
+    this.products.forEach(prod => {
+      const productData = [
+        prod.codeEAN || '-',
+        prod.nomMedicament || '-',
+        prod.forme || '-',
+        prod.dosage || '-',
+        prod.prixVenteTTC !== undefined && prod.prixVenteTTC !== null ? prod.prixVenteTTC.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' }) : '-',
+        prod.quantiteTotaleEnStock !== undefined ? prod.quantiteTotaleEnStock : 0,
+        this.getStockStatusText(prod)
+      ];
+      tableRows.push(productData);
+    });
+
+    doc.setFontSize(18);
+    doc.text("Rapport des Produits", 14, 22);
+    doc.setFontSize(11);
+    doc.setTextColor(100);
+
+    autoTable(doc, {
+      startY: 30,
+      head: [tableColumn],
+      body: tableRows,
+      theme: 'striped',
+      headStyles: { fillColor: [22, 160, 133] },
+      didDrawPage: (dataArg: any) => {
+        doc.setFontSize(10);
+        const pageCount = doc.getNumberOfPages();
+        doc.text('Page ' + String(dataArg.pageNumber) + ' sur ' + String(pageCount), dataArg.settings.margin.left, doc.internal.pageSize.height - 10);
+      }
+    });
+
+    doc.save('rapport_produits_spec.pdf'); // Changed name to avoid conflict
+    this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Rapport PDF généré (depuis spec).', life: 3000 });
+  }
+
+
 }

@@ -8,7 +8,8 @@ import { FormeEnum } from '../../models/enums/FormeEnum';
 import { ServerStatusService } from '../../service/server-status.service';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable'; // Add this line
 // Import des modules PrimeNG
 import { TableModule } from 'primeng/table';
 import { ToastModule } from 'primeng/toast';
@@ -361,4 +362,51 @@ export class ProduitComponent implements OnInit, OnDestroy {
         }
     }
 
+    
+  exportPdf() {
+    if (!this.products || this.products.length === 0) {
+      this.messageService.add({ severity: 'warn', summary: 'Avertissement', detail: 'Aucun produit à exporter.', life: 3000 });
+      return;
+    }
+
+    const doc = new jsPDF();
+    const tableColumn = ["Code EAN", "Nom Médicament", "Forme", "Dosage", "Prix TTC", "Stock", "Statut"];
+    const tableRows: any[][] = [];
+
+    this.products.forEach(prod => {
+      const productData = [
+        prod.codeEAN || '-',
+        prod.nomMedicament || '-',
+        prod.forme || '-', // This will use the enum value, e.g., 'COMPRIME'
+        prod.dosage || '-',
+        // Ensure prixVenteTTC is formatted as currency for the PDF
+        prod.prixVenteTTC !== undefined && prod.prixVenteTTC !== null ? prod.prixVenteTTC+" MAD": '-',
+        prod.quantiteTotaleEnStock !== undefined ? prod.quantiteTotaleEnStock : 0,
+        this.getStockStatusText(prod)
+      ];
+      tableRows.push(productData);
+    });
+
+    doc.setFontSize(18);
+    doc.text("Rapport des Produits", 14, 22);
+    doc.setFontSize(11);
+    doc.setTextColor(100);
+
+   autoTable(doc, {
+      startY: 30,
+      head: [tableColumn],
+      body: tableRows,
+      theme: 'striped', // or 'grid', 'plain'
+      headStyles: { fillColor: [22, 160, 133] }, // Example header color
+      didDrawPage: (dataArg: any) => {
+        // Footer
+        doc.setFontSize(10);
+        const pageCount = doc.getNumberOfPages(); // Use getNumberOfPages()
+        doc.text('Page ' + String(dataArg.pageNumber) + ' sur ' + String(pageCount), dataArg.settings.margin.left, doc.internal.pageSize.height - 10);
+      }
+    });
+
+    doc.save('rapport_produits.pdf');
+    this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Rapport PDF généré.', life: 3000 });
+  }
 }
