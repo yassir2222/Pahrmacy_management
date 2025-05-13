@@ -1,12 +1,11 @@
 // src/app/service/product.service.ts
 import { Inject, Injectable, PLATFORM_ID } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, tap, map } from 'rxjs/operators';
 import { Produit } from '../models/Produit'; 
 import { isPlatformBrowser } from '@angular/common';
 import { environment } from '../../environments/environment';
-
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 @Injectable({
   providedIn: 'root' 
 })
@@ -94,63 +93,84 @@ export class ProductService {
       );
   }
 
- deleteProduct(id: number): Observable<void> {
-  const url = `${this.apiUrl}/delete/${id}`;
-  console.log(`Attempting to delete product with ID: ${id}`);
-  
-  let headers = {};
-  
-  // Only try to access localStorage in browser context
-  if (isPlatformBrowser(this.platformId)) {
-    const token = localStorage.getItem('auth_token');
-    console.log('Using auth token:', token ? 'Token found' : 'No token found');
-    
-    if (token) {
-      headers = {
-        'Authorization': `Bearer ${token}`
-      };
+
+  deleteProduct(id: number): Observable<void> {
+    const url = `${this.apiUrl}/delete/${id}`;
+    const headers = this.getAuthHeaders();
+
+    console.log(`Attempting to delete product with ID: ${id}. URL: ${url}`);
+    // Optional: Log token snippet for debugging, as you had
+    if (isPlatformBrowser(this.platformId)) {
+      const token = localStorage.getItem('auth_token');
+      if (token) {
+        console.log('Token for delete starts with:', token.substring(0, 15) + '...');
+      } else {
+        console.warn('No auth_token found in localStorage for deleteProduct.');
+      }
     }
+
+
+    return this.http.delete<void>(url, { headers })
+      .pipe(
+        tap(_ => console.log(`Successfully deleted product with id=${id}`)),
+        catchError(error => {
+          console.error(`Failed to delete product with ID ${id}. Error details:`, error);
+          if (error.error instanceof Object) {
+            console.error('Error body:', JSON.stringify(error.error, null, 2));
+          } else if (typeof error.error === 'string') {
+            console.error('Error message from server:', error.error);
+          }
+          // Specific check from your original code
+          if (error.status === 403) {
+            console.error('Authorization failed (403). Check if user has delete permissions.');
+          }
+          return this.handleError(error);
+        })
+      );
   }
-  
-  console.log('Sending request with headers:', headers);
-  
-  return this.http.delete<void>(url, { headers })
-    .pipe(
-      tap(_ => console.log(`Successfully deleted product id=${id}`)),
+
+  deleteSelectedProducts(ids: number[]): Observable<void> {
+    const url = `${this.apiUrl}/batch`; // Assuming this is your batch delete endpoint
+    
+    // Use a consistent way to get headers, and ensure Content-Type is set if sending a body
+    let headers = this.getAuthHeaders();
+
+    console.log(`Attempting to batch delete products with IDs: [${ids.join(', ')}]. URL: ${url}`);
+    // Optional: Log token snippet for debugging
+    if (isPlatformBrowser(this.platformId)) {
+      const token = localStorage.getItem('auth_token');
+      if (token) {
+        console.log('Token for batch delete starts with:', token.substring(0, 15) + '...');
+      } else {
+        console.warn('No auth_token found in localStorage for deleteSelectedProducts.');
+      }
+    }
+    console.log('Sending batch delete request with body:', JSON.stringify(ids, null, 2));
+
+
+    // Using http.request to explicitly set method to 'DELETE' with a body.
+    // Alternatively, some backends/frameworks might allow http.delete(url, { headers, body: ids })
+    return this.http.request<void>('delete', url, {
+      body: ids,
+      headers: headers
+    }).pipe(
+      tap(_ => console.log(`Successfully batch deleted products with IDs: [${ids.join(', ')}]`)),
       catchError(error => {
-        console.error(`Error deleting product with ID ${id}:`, error);
+        console.error(`Failed to batch delete products with IDs [${ids.join(', ')}]. Error details:`, error);
+        if (error.error instanceof Object) {
+          console.error('Error body:', JSON.stringify(error.error, null, 2));
+        } else if (typeof error.error === 'string') {
+          console.error('Error message from server:', error.error);
+        }
+        // You could add specific status checks here too, e.g., for 403
+        if (error.status === 403) {
+          console.error('Authorization failed (403) for batch delete. Check permissions.');
+        }
         return this.handleError(error);
       })
     );
-}
-
-// Similarly update the batch delete method
-deleteSelectedProducts(ids: number[]): Observable<void> {
-  const url = `${this.apiUrl}/batch`;
-  
-  let headers = {};
-  
-  // Only try to access localStorage in browser context
-  if (isPlatformBrowser(this.platformId)) {
-    const token = localStorage.getItem('auth_token');
-    
-    if (token) {
-      headers = {
-        'Authorization': `Bearer ${token}`
-      };
-    }
   }
 
-
-  
-  return this.http.request<void>('delete', url, { 
-    body: ids,
-    headers: headers 
-  }).pipe(
-    tap(_ => console.log(`Deleted products with ids: ${ids.join(', ')}`)),
-    catchError(this.handleError)
-  );
-}
 
 private getAuthHeaders(): Record<string, string> {
   if (isPlatformBrowser(this.platformId)) {

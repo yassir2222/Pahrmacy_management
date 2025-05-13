@@ -12,8 +12,8 @@ import java.util.Optional;
 
 public interface LotDeStockRepo extends JpaRepository<LotDeStock,Long> {
 
-    @Query("SELECT SUM(sl.quantite) FROM LotDeStock sl WHERE sl.produit.id = :productId")
-    int calculateTotalStockQuantityForProduct(@Param("productId") Long productId);
+    @Query("SELECT COALESCE(SUM(sl.quantite), 0) FROM LotDeStock sl WHERE sl.produit.id = :productId")
+    Integer calculateTotalStockQuantityForProduct(@Param("productId") Long productId);
 
     Optional<LotDeStock> findByProduitIdAndNumeroLot(Long produitId, String numeroLot);
 }
