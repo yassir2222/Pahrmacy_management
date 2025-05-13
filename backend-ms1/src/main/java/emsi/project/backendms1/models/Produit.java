@@ -44,7 +44,7 @@ public class Produit {
     private String dosage;
 
     @Column(nullable = false)
-    private int quantiteTotaleEnStock = 0;
+    private int quantiteTotaleEnStock;
 
     @OneToMany(mappedBy = "produit", fetch = FetchType.LAZY)
     private List<LigneVente> ligneVentes= new ArrayList<>();
@@ -126,6 +126,7 @@ public class Produit {
     }
 
     public void setQuantiteTotaleEnStock(int quantiteTotaleEnStock) {
+
         this.quantiteTotaleEnStock = quantiteTotaleEnStock;
     }
 

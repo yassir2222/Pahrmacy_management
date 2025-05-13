@@ -25,9 +25,20 @@ public class ProduitService {
 
 
     public Produit createProduct(Produit product) {
+        if(product.getNomMedicament() == null || product.getNomMedicament().isEmpty()) {
+            throw new IllegalArgumentException("Le nom du médicament ne peut pas être vide");
+        }
+        Produit newP = new Produit();
+        newP.setNomMedicament(product.getNomMedicament());
+        newP.setCodeEAN(product.getCodeEAN());
+        newP.setPrixVenteTTC(product.getPrixVenteTTC());
+        newP.setPrixAchatHT(product.getPrixAchatHT());
+        newP.setSeuilStock(product.getSeuilStock());
+        newP.setForme(product.getForme());
+        newP.setDosage(product.getDosage());
+        newP.setQuantiteTotaleEnStock(product.getQuantiteTotaleEnStock());
 
-        product.setQuantiteTotaleEnStock(0);
-        return productRepository.save(product);
+        return productRepository.save(newP);
     }
 
     public Produit updateProduct(Long id, Produit detailsProduit) {
@@ -44,7 +55,7 @@ public class ProduitService {
         produitExistant.setSeuilStock(detailsProduit.getSeuilStock());
         produitExistant.setForme(detailsProduit.getForme());
         produitExistant.setDosage(detailsProduit.getDosage());
-
+        produitExistant.setQuantiteTotaleEnStock(detailsProduit.getQuantiteTotaleEnStock());
         return productRepository.save(produitExistant);
     }
 

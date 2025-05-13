@@ -198,7 +198,6 @@ export class ProduitComponent implements OnInit {
             error: (err) => {
                  console.error('Error updating product:', err);
                 this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not update product. ' + err.message , life: 3000 });
-                // Optionally keep dialog open on error
             }
         });
 
