@@ -32,8 +32,16 @@ export class LoginComponent {
     password: ''
   };
   
+  registerObj = {
+    username: '',
+    password: '',
+    confirmPassword: '',
+    email: ''
+  };
+  
   isLoading = false;
   returnUrl: string = '/app/dashboard';
+  mode: 'login' | 'register' = 'login';
   
   private router = inject(Router);
   private route = inject(ActivatedRoute);
@@ -48,6 +56,10 @@ export class LoginComponent {
     if (this.authService.isAuthenticated) {
       this.router.navigate([this.returnUrl]);
     }
+  }
+  
+  switchMode() {
+    this.mode = this.mode === 'login' ? 'register' : 'login';
   }
   
   onLogin() {
@@ -82,6 +94,47 @@ export class LoginComponent {
           severity: 'error',
           summary: 'Erreur',
           detail: error.message || 'Identifiants incorrects'
+        });
+        this.isLoading = false;
+      }
+    });
+  }
+
+  onRegister() {
+    this.isLoading = true;
+    if (!this.registerObj.username || !this.registerObj.password || !this.registerObj.email) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Erreur',
+        detail: 'Veuillez remplir tous les champs'
+      });
+      this.isLoading = false;
+      return;
+    }
+    if (this.registerObj.password !== this.registerObj.confirmPassword) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Erreur',
+        detail: 'Les mots de passe ne correspondent pas'
+      });
+      this.isLoading = false;
+      return;
+    }
+    this.authService.register(this.registerObj).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Succès',
+          detail: 'Inscription réussie ! Vous pouvez maintenant vous connecter.'
+        });
+        this.mode = 'login';
+        this.isLoading = false;
+      },
+      error: (error) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Erreur',
+          detail: error.message || 'Erreur lors de l\'inscription'
         });
         this.isLoading = false;
       }

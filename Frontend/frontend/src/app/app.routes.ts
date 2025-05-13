@@ -3,11 +3,12 @@ import { Routes } from '@angular/router';
 import { LayoutComponent } from './pages/layout/layout.component'; 
 
 import { authGuard, adminGuard } from './guards/auth.guard';
+import { LoginComponent } from './pages/login/login.component';
 
 export const routes: Routes = [
   {
     path: 'login',
-    loadComponent: () => import('./pages/login/login.component').then(m => m.LoginComponent) 
+    component: LoginComponent 
   },
   {
     path: 'app',
