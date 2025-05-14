@@ -158,25 +158,31 @@ export class StockService {
 
   
 
-  /**
-   * Crée un nouveau lot pour un produit.
-   * @param produitId L'ID du produit auquel le lot appartient.
-   * @param lotData Les données du lot à créer.
-   */
-  
 
-  /**
-   * Met à jour un lot existant.
-   * @param lotId L'ID du lot à mettre à jour.
-   * @param lotData Les nouvelles données du lot.
-   */
-  updateLot(lotId: number, lotData: LotDeStock): Observable<LotDeStock> {
-    // Assuming endpoint: PUT /stock/lots/{lotId}
-    const url = `${this.baseApiUrl}/lots/${lotId}`;
-    console.log(`URL appelée pour updateLot: ${url}`);
-    return this.http.put<LotDeStock>(url, lotData)
+
+ 
+ updateLot(lotId: number, lotData: {
+    numeroLot: string;
+    dateExpiration: string; // Format YYYY-MM-DD
+    quantite: number;
+    prixAchatHT: number;
+    // dateReception n'est pas dans l'endpoint backend pour update
+  }): Observable<LotDeStock> {
+    const url = `${this.lotsUrl}/update`; // Correspond à @PostMapping("/update")
+    
+    const formData = new FormData();
+    formData.append('lotId', lotId.toString());
+    formData.append('numeroLot', lotData.numeroLot);
+    formData.append('dateExpiration', lotData.dateExpiration);
+    formData.append('quantite', lotData.quantite.toString());
+    formData.append('prixAchatHT', lotData.prixAchatHT.toString());
+
+    console.log(`Appel de updateLot URL: ${url}`);
+    // formData.forEach((value, key) => console.log(`FormData Update ${key}: ${value}`)); // Pour débogage
+
+    return this.http.post<LotDeStock>(url, formData) // Utiliser POST comme le backend
       .pipe(
-        tap(lot => console.log(`Lot mis à jour avec ID: ${lot.id}`)),
+        tap(lot => console.log('Lot mis à jour avec succès:', lot)),
         catchError(this.handleError)
       );
   }

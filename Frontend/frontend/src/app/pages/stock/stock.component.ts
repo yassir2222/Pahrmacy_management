@@ -256,9 +256,17 @@ export class StockComponent implements OnInit, OnDestroy {
     }
 
     if (!this.selectedProduit || this.selectedProduit.id === undefined) {
-        this.messageService.add({ severity: 'error', summary: 'Erreur Produit', detail: 'Produit non sélectionné pour l\'opération.' });
+        // Bien que selectedProduit ne soit pas directement utilisé pour l'update via lotId,
+        // il est bon de le garder pour la cohérence du contexte et le rafraîchissement.
+        this.messageService.add({ severity: 'error', summary: 'Erreur Produit', detail: 'Contexte produit non défini pour l\'opération.' });
         return;
     }
+    
+    if (this.isLotEditMode && (!this.currentLot || this.currentLot.id === undefined || this.currentLot.id === 0) ) {
+        this.messageService.add({ severity: 'error', summary: 'Erreur Lot', detail: 'ID du lot non défini pour la mise à jour.' });
+        return;
+    }
+
 
     this.isSavingLot = true;
     const lotDataFromForm = this.lotForm.value;
@@ -267,17 +275,17 @@ export class StockComponent implements OnInit, OnDestroy {
     let saveObservable: Observable<LotDeStock>;
 
     if (this.isLotEditMode && this.currentLot.id) {
-      const updatePayload: LotDeStock = {
-        id: this.currentLot.id,
+      // MODIFIÉ: section pour la mise à jour
+      const updatePayload = {
+        // lotId est passé en premier argument à stockService.updateLot
         numeroLot: lotDataFromForm.numeroLot,
         dateExpiration: dateExpirationFormatted,
         quantite: lotDataFromForm.quantite,
         prixAchatHT: lotDataFromForm.prixAchatHT,
-        dateReception: lotDataFromForm.dateReception ? new Date(lotDataFromForm.dateReception).toISOString().split('T')[0] : undefined,
+        // dateReception n'est pas gérée par l'endpoint /update du backend
       };
       saveObservable = this.stockService.updateLot(this.currentLot.id, updatePayload);
     } else {
-      // MODIFIÉ: section pour la création
       const createPayload = {
         numeroLot: lotDataFromForm.numeroLot,
         dateExpiration: dateExpirationFormatted,

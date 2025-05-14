@@ -133,4 +133,15 @@ public class StockService {
         return stockLotRepository.findByProduitId(produitId);
     }
 
+    @Transactional
+    public void removeLot(Long lotId) {
+        LotDeStock lot = stockLotRepository.findById(lotId)
+                .orElseThrow(() -> new EntityNotFoundException("Lot non trouvé avec l'ID: " + lotId));
+
+        Long produitId = lot.getProduit().getId();
+
+        stockLotRepository.delete(lot);
+        updateProductTotalStock(produitId);
+    }
+
 }

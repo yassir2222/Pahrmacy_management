@@ -87,4 +87,18 @@ public class LotDeStockController {
         }
         return ResponseEntity.ok(stocks);
     }
+
+    @DeleteMapping("/lot/{lotId}")
+    @PreAuthorize("hasAnyRole('ROLE_USER')")
+    public ResponseEntity<?> removeLot(@PathVariable Long lotId) {
+        try {
+            stockService.removeLot(lotId);
+            return ResponseEntity.ok().body("Lot supprimé avec succès");
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Erreur lors de la suppression du lot: " + e.getMessage());
+        }
+    }
 }

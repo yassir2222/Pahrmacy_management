@@ -28,7 +28,7 @@ public class LotDeStock {
     @Column(nullable = false)
     private LocalDate dateExpiration;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "product_id", nullable = false)
     private Produit produit;
 
