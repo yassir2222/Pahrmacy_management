@@ -6,53 +6,144 @@
       <ng-template pTemplate="header">
         <div class="login-header">
           <h2>Gestion de Pharmacie</h2>
-          <h3>Connexion</h3>
+          <h3 *ngIf="mode === 'login'">Connexion</h3>
+          <h3 *ngIf="mode === 'register'">Inscription</h3>
         </div>
       </ng-template>
       
       <div class="login-form">
         <div class="p-fluid">
-          <div class="p-field mb-3">
-            <label for="username">Nom d'utilisateur</label>
-            <span class="p-input-icon-left">
-              <i class="pi pi-user"></i>
-              <input 
-                id="username" 
-                type="text" 
-                pInputText 
-                [(ngModel)]="loginObj.username" 
-                placeholder="Entrez votre nom d'utilisateur" 
-                [disabled]="isLoading"
-                required
-              />
-            </span>
-          </div>
-          
-          <div class="p-field mb-4">
-            <label for="password">Mot de passe</label>
-            <span class="p-input-icon-left">
-              <i class="pi pi-lock"></i>
-              <input 
-                id="password" 
-                type="password" 
-                pInputText 
-                [(ngModel)]="loginObj.password" 
-                placeholder="Entrez votre mot de passe" 
-                [disabled]="isLoading"
-                required
-              />
-            </span>
-          </div>
-          
-          <button 
-            pButton 
-            type="button" 
-            label="Se connecter" 
-            icon="pi pi-sign-in" 
-            (click)="onLogin()" 
-            [loading]="isLoading" 
-            class="p-button-primary w-100"
-          ></button>
+          <!-- Formulaire de connexion -->
+          <ng-container *ngIf="mode === 'login'">
+            <div class="p-field mb-3">
+              <label for="username">Nom d'utilisateur</label>
+              <span class="p-input-icon-left">
+                <i class="pi pi-user"></i>
+                <input 
+                  id="username" 
+                  type="text" 
+                  pInputText 
+                  [(ngModel)]="loginObj.username" 
+                  placeholder="Entrez votre nom d'utilisateur" 
+                  [disabled]="isLoading"
+                  required
+                />
+              </span>
+            </div>
+            <div class="p-field mb-4">
+              <label for="password">Mot de passe</label>
+              <span class="p-input-icon-left">
+                <i class="pi pi-lock"></i>
+                <input 
+                  id="password" 
+                  type="password" 
+                  pInputText 
+                  [(ngModel)]="loginObj.password" 
+                  placeholder="Entrez votre mot de passe" 
+                  [disabled]="isLoading"
+                  required
+                />
+              </span>
+            </div>
+            <button 
+              pButton 
+              type="button" 
+              label="Se connecter" 
+              icon="pi pi-sign-in" 
+              (click)="onLogin()" 
+              [loading]="isLoading" 
+              class="p-button-primary w-100 mb-3"
+            ></button>
+            <button 
+              pButton 
+              type="button" 
+              label="Créer un compte" 
+              icon="pi pi-user-plus" 
+              (click)="switchMode()" 
+              class="p-button-secondary w-100"
+            ></button>
+          </ng-container>
+
+          <!-- Formulaire d'inscription -->
+          <ng-container *ngIf="mode === 'register'">
+            <div class="p-field mb-3">
+              <label for="register-username">Nom d'utilisateur</label>
+              <span class="p-input-icon-left">
+                <i class="pi pi-user"></i>
+                <input 
+                  id="register-username" 
+                  type="text" 
+                  pInputText 
+                  [(ngModel)]="registerObj.username" 
+                  placeholder="Choisissez un nom d'utilisateur" 
+                  [disabled]="isLoading"
+                  required
+                />
+              </span>
+            </div>
+            <div class="p-field mb-3">
+              <label for="register-email">Email</label>
+              <span class="p-input-icon-left">
+                <i class="pi pi-envelope"></i>
+                <input 
+                  id="register-email" 
+                  type="email" 
+                  pInputText 
+                  [(ngModel)]="registerObj.email" 
+                  placeholder="Entrez votre email" 
+                  [disabled]="isLoading"
+                  required
+                />
+              </span>
+            </div>
+            <div class="p-field mb-3">
+              <label for="register-password">Mot de passe</label>
+              <span class="p-input-icon-left">
+                <i class="pi pi-lock"></i>
+                <input 
+                  id="register-password" 
+                  type="password" 
+                  pInputText 
+                  [(ngModel)]="registerObj.password" 
+                  placeholder="Choisissez un mot de passe" 
+                  [disabled]="isLoading"
+                  required
+                />
+              </span>
+            </div>
+            <div class="p-field mb-4">
+              <label for="register-confirmPassword">Confirmer le mot de passe</label>
+              <span class="p-input-icon-left">
+                <i class="pi pi-lock"></i>
+                <input 
+                  id="register-confirmPassword" 
+                  type="password" 
+                  pInputText 
+                  [(ngModel)]="registerObj.confirmPassword" 
+                  placeholder="Confirmez votre mot de passe" 
+                  [disabled]="isLoading"
+                  required
+                />
+              </span>
+            </div>
+            <button 
+              pButton 
+              type="button" 
+              label="S'inscrire" 
+              icon="pi pi-user-plus" 
+              (click)="onRegister()" 
+              [loading]="isLoading" 
+              class="p-button-primary w-100 mb-3"
+            ></button>
+            <button 
+              pButton 
+              type="button" 
+              label="Retour à la connexion" 
+              icon="pi pi-arrow-left" 
+              (click)="switchMode()" 
+              class="p-button-secondary w-100"
+            ></button>
+          </ng-container>
         </div>
       </div>
       

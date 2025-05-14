@@ -40,6 +40,7 @@ public class AuthController {
             return ResponseEntity.badRequest().body("Username is already in use");
         }
         user.setPassword(passwordEncoder.encode(user.getPassword()));
+        user.setRole("ROLE_USER");
         User savedUser = userRepository.save(user);
         
         // Create response with token and user info
