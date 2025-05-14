@@ -111,6 +111,32 @@ export class StockService {
       );
   }
   
+
+    createLot(produitId: number, lotData: {
+    numeroLot: string;
+    dateExpiration: string; // Format YYYY-MM-DD
+    quantite: number;
+    prixAchatHT: number;
+  }): Observable<LotDeStock> {
+    const url = `${this.lotsUrl}/add`; // Correspond à @PostMapping("/add")
+    
+    const formData = new FormData();
+    formData.append('productId', produitId.toString());
+    formData.append('numeroLot', lotData.numeroLot);
+    formData.append('dateExpiration', lotData.dateExpiration);
+    formData.append('quantite', lotData.quantite.toString());
+    formData.append('prixAchatHT', lotData.prixAchatHT.toString());
+
+    console.log(`Appel de createLot URL: ${url}`);
+
+    return this.http.post<LotDeStock>(url, formData)
+      .pipe(
+        tap(lot => console.log('Lot créé avec succès:', lot)),
+        catchError(this.handleError)
+      );
+  }
+
+  
   /**
    * Gestion des erreurs HTTP
    */
@@ -129,4 +155,49 @@ export class StockService {
     console.error(errorMessage);
     return throwError(() => new Error(errorMessage));
   }
+
+  
+
+  /**
+   * Crée un nouveau lot pour un produit.
+   * @param produitId L'ID du produit auquel le lot appartient.
+   * @param lotData Les données du lot à créer.
+   */
+  
+
+  /**
+   * Met à jour un lot existant.
+   * @param lotId L'ID du lot à mettre à jour.
+   * @param lotData Les nouvelles données du lot.
+   */
+  updateLot(lotId: number, lotData: LotDeStock): Observable<LotDeStock> {
+    // Assuming endpoint: PUT /stock/lots/{lotId}
+    const url = `${this.baseApiUrl}/lots/${lotId}`;
+    console.log(`URL appelée pour updateLot: ${url}`);
+    return this.http.put<LotDeStock>(url, lotData)
+      .pipe(
+        tap(lot => console.log(`Lot mis à jour avec ID: ${lot.id}`)),
+        catchError(this.handleError)
+      );
+  }
+
+  /**
+   * Supprime un lot.
+   * @param lotId L'ID du lot à supprimer.
+   */
+  deleteLot(lotId: number): Observable<void> {
+    // Assuming endpoint: DELETE /stock/lots/{lotId}
+    const url = `${this.baseApiUrl}/lots/${lotId}`;
+    console.log(`URL appelée pour deleteLot: ${url}`);
+    return this.http.delete<void>(url)
+      .pipe(
+        tap(() => console.log(`Lot supprimé avec ID: ${lotId}`)),
+        catchError(this.handleError)
+      );
+  }
+  
+  /**
+   * Gestion des erreurs HTTP
+   */
+ 
 }

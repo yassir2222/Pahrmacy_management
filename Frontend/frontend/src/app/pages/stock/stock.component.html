@@ -1,10 +1,24 @@
 <p-toast></p-toast>
+<p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>
 
 <div class="grid p-fluid">
-  <!-- Section Sélection Produit et Détails -->
-  <div class="col-12 md:col-4">
+  <div class="col-12 md:col-6">
+    <p-panel>
+      <div class="flex justify-content-center align-items-center">
+        <img
+          src="assets/images/Pharmacist-amico.png"
+          alt="Image du produit"
+          style="max-width: 450px; max-height: 450px; object-fit: contain; margin-bottom: 1rem;"
+        >
+      </div>
+    </p-panel>
+  </div>
+
+
+  
+  <div class="col-12 md:col-6">
     <p-panel header="Sélection et Détails Produit">
-      <form [formGroup]="mouvementForm" class="mb-3">
+      <form [formGroup]="produitSelectionForm" class="mb-3">
         <div class="field">
           <label for="produit">Choisir un produit</label>
           <p-dropdown
@@ -22,17 +36,15 @@
             [loading]="isLoadingProduits"
           >
           </p-dropdown>
-          <!-- Afficher l'erreur si le champ est touché et invalide -->
           <small
             class="p-error"
-            *ngIf="mouvementForm.get('produitId')?.touched && mouvementForm.get('produitId')?.errors?.['required']"
+            *ngIf="produitSelectionForm.get('produitId')?.touched && produitSelectionForm.get('produitId')?.errors?.['required']"
           >
             Le produit est requis.
           </small>
         </div>
       </form>
 
-      <!-- Détails du Produit Sélectionné -->
       <p-card
         *ngIf="selectedProduit"
         header="Détails du Produit"
@@ -47,34 +59,41 @@
         <div class="field">
           <strong>Prix Achat HT:</strong>
           {{
-            (selectedProduit.prixAchatHT + " MAD"|| "N/A")
+            (selectedProduit.prixAchatHT !== null && selectedProduit.prixAchatHT !== undefined ? selectedProduit.prixAchatHT + " MAD" : "N/A")
           }}
         </div>
         <div class="field">
           <strong>Prix Vente TTC:</strong>
           {{
-            (selectedProduit.prixVenteTTC +" MAD"|| "N/A")
+            (selectedProduit.prixVenteTTC !== null && selectedProduit.prixVenteTTC !== undefined ? selectedProduit.prixVenteTTC +" MAD" : "N/A")
           }}
         </div>
         <div class="field">
           <strong>Quantité Totale en Stock:</strong>
-          {{ selectedProduit.quantiteTotaleEnStock ?? "Calcul..." }}
+          {{ selectedProduit.quantiteTotaleEnStock ?? "0" }}
         </div>
         <div class="field">
           <strong>Seuil de Stock Bas:</strong>
           {{ selectedProduit.seuilStock ?? "N/D" }}
         </div>
       </p-card>
-      <p *ngIf="!selectedProduit && produitDropdown.value">
+      <p *ngIf="!selectedProduit && produitDropdown.value && !isLoadingProduits">
         Chargement des détails...
       </p>
     </p-panel>
   </div>
 
-  <!-- Section Lots et Mouvements -->
-  <div class="col-12 md:col-8">
-    <!-- Tableau des Lots -->
+  <!-- Section Lots -->
+  <div class="col-12 mt-3">
     <p-panel header="Lots de Stock du Produit Sélectionné">
+      <div class="mb-3 flex justify-content-end">
+        <p-button 
+            label="Ajouter Lot" 
+            icon="pi pi-plus" 
+            (click)="openNewLotDialog()" 
+            [disabled]="!selectedProduit">
+        </p-button>
+      </div>
       <p-table
         #dtLots
         [value]="lots"
@@ -98,7 +117,14 @@
             <th pSortableColumn="quantite">
               Qté Actuelle <p-sortIcon field="quantite"></p-sortIcon>
             </th>
+             <th pSortableColumn="prixAchatHT">
+              Prix Achat HT <p-sortIcon field="prixAchatHT"></p-sortIcon>
+            </th>
+            <th pSortableColumn="dateReception">
+              Date Réception <p-sortIcon field="dateReception"></p-sortIcon>
+            </th>
             <th>Statut</th>
+            <th>Actions</th>
           </tr>
         </ng-template>
         <ng-template pTemplate="body" let-lot>
@@ -106,6 +132,8 @@
             <td>{{ lot.numeroLot }}</td>
             <td>{{ lot.dateExpiration | date : "dd/MM/yyyy" }}</td>
             <td>{{ lot.quantite }}</td>
+            <td>{{ (lot.prixAchatHT !== null && lot.prixAchatHT !== undefined ? lot.prixAchatHT + ' MAD' : 'N/A') }}</td>
+            <td>{{ lot.dateReception | date : "dd/MM/yyyy" }}</td>
             <td>
               <p-badge
                 *ngIf="getBadgeValue(lot)"
@@ -114,18 +142,22 @@
               >
               </p-badge>
             </td>
+            <td>
+                <p-button icon="pi pi-pencil" styleClass="p-button-rounded p-button-success mr-2" (click)="openEditLotDialog(lot)"></p-button>
+                <p-button icon="pi pi-trash" styleClass="p-button-rounded p-button-danger" (click)="deleteLot(lot)"></p-button>
+            </td>
           </tr>
         </ng-template>
         <ng-template pTemplate="emptymessage">
           <tr>
-            <td colspan="4" class="text-center">
+            <td colspan="7" class="text-center">
               Aucun lot trouvé pour ce produit ou aucun produit sélectionné.
             </td>
           </tr>
         </ng-template>
         <ng-template pTemplate="loadingbody">
           <tr>
-            <td colspan="4" class="text-center">
+            <td colspan="7" class="text-center">
               <p-progressSpinner
                 styleClass="w-4rem h-4rem"
                 strokeWidth="8"
@@ -138,81 +170,67 @@
       </p-table>
     </p-panel>
 
-    <!-- Formulaire de Mouvement -->
-    <p-panel header="Ajouter un Mouvement de Stock" styleClass="mt-4">
-      <form [formGroup]="mouvementForm" (ngSubmit)="ajouterMouvement()">
-        <!-- Le produit est sélectionné via le dropdown plus haut, lié par formControlName="produitId" -->
-        <div class="grid formgrid">
-          <div class="field col-12 md:col-6">
-            <label for="typeMouvement">Type de Mouvement</label>
-            <p-dropdown
-              id="typeMouvement"
-              [options]="typesMouvement"
-              formControlName="typeMouvement"
-              placeholder="Sélectionner un type"
-              optionLabel="label"
-              optionValue="value"
-              [style]="{ width: '100%' }"
-            >
-            </p-dropdown>
-            <small
-              class="p-error"
-              *ngIf="mouvementForm.get('typeMouvement')?.touched && mouvementForm.get('typeMouvement')?.errors?.['required']"
-            >
-              Le type est requis.
-            </small>
-          </div>
+    <!-- Dialog pour Ajouter/Modifier Lot -->
+    <p-dialog 
+        header="{{isLotEditMode ? 'Modifier le Lot' : 'Ajouter un Nouveau Lot'}}" 
+        [(visible)]="lotDialog" 
+        [modal]="true" 
+        [style]="{width: '450px'}" 
+        (onHide)="hideLotDialog()">
+        <form [formGroup]="lotForm" (ngSubmit)="saveLot()">
+            <div class="field">
+                <label for="numeroLot">Numéro de Lot</label>
+                <input id="numeroLot" type="text" pInputText formControlName="numeroLot" class="w-full" 
+                       [ngClass]="{'ng-invalid ng-dirty' : submittedLot && lotForm.controls['numeroLot'].errors}" />
+                <small class="p-error" *ngIf="submittedLot && lotForm.controls['numeroLot'].errors?.['required']">
+                    Le numéro de lot est requis.
+                </small>
+            </div>
 
-          <div class="field col-12 md:col-6">
-            <label for="quantite">Quantité</label>
-            <p-inputNumber
-              id="quantite"
-              formControlName="quantite"
-              mode="decimal"
-              [min]="1"
-              [showButtons]="true"
-              inputId="quantiteInput"
-              [style]="{ width: '100%' }"
-            >
-            </p-inputNumber>
-            <small
-              class="p-error"
-              *ngIf="mouvementForm.get('quantite')?.touched && mouvementForm.get('quantite')?.errors?.['required']"
-            >
-              La quantité est requise.
-            </small>
-            <small
-              class="p-error"
-              *ngIf="mouvementForm.get('quantite')?.touched && mouvementForm.get('quantite')?.errors?.['min']"
-            >
-              La quantité doit être au moins 1.
-            </small>
-          </div>
+            <div class="field">
+                <label for="dateExpiration">Date d'Expiration</label>
+                <p-calendar id="dateExpiration" formControlName="dateExpiration" [showIcon]="true" dateFormat="dd/mm/yy" inputId="dateExpirationInput" appendTo="body"
+                            [ngClass]="{'ng-invalid ng-dirty' : submittedLot && lotForm.controls['dateExpiration'].errors}"></p-calendar>
+                <small class="p-error" *ngIf="submittedLot && lotForm.controls['dateExpiration'].errors?.['required']">
+                    La date d'expiration est requise.
+                </small>
+            </div>
 
-          <div class="field col-12">
-            <label for="motif">Motif (Optionnel)</label>
-            <textarea
-              id="motif"
-              pInputTextarea
-              formControlName="motif"
-              rows="3"
-              style="width: 100%"
-            >
-            </textarea>
-          </div>
-        </div>
+            <div class="field">
+                <label for="quantite">Quantité</label>
+                <p-inputNumber id="quantite" formControlName="quantite" mode="decimal" [min]="1" [showButtons]="true" inputId="quantiteLotInput" class="w-full"
+                               [ngClass]="{'ng-invalid ng-dirty' : submittedLot && lotForm.controls['quantite'].errors}"></p-inputNumber>
+                <small class="p-error" *ngIf="submittedLot && lotForm.controls['quantite'].errors?.['required']">
+                    La quantité est requise.
+                </small>
+                 <small class="p-error" *ngIf="submittedLot && lotForm.controls['quantite'].errors?.['min']">
+                    La quantité doit être au moins 1.
+                </small>
+            </div>
+            
+           <div class="field">
+                <label for="prixAchatHT">Prix d'Achat HT</label> <!-- MODIFIÉ: "(Optionnel)" supprimé -->
+                <p-inputNumber id="prixAchatHT" formControlName="prixAchatHT" mode="currency" currency="MAD" locale="fr-FR" [min]="0.01" inputId="prixAchatHTLotInput" class="w-full"
+                               [ngClass]="{'ng-invalid ng-dirty' : submittedLot && lotForm.controls['prixAchatHT'].errors}"></p-inputNumber>
+                <small class="p-error" *ngIf="submittedLot && lotForm.controls['prixAchatHT'].errors?.['required']">
+                    Le prix d'achat HT est requis.
+                </small>
+                <small class="p-error" *ngIf="submittedLot && lotForm.controls['prixAchatHT'].errors?.['min']">
+                    Le prix d'achat HT doit être supérieur à 0.
+                </small>
+            </div>
 
-        <div class="flex justify-content-end mt-4">
-          <p-button
-            label="Ajouter Mouvement"
-            icon="pi pi-plus"
-            type="submit"
-            [disabled]="mouvementForm.invalid || isLoadingMouvement"
-            [loading]="isLoadingMouvement"
-          >
-          </p-button>
-        </div>
-      </form>
-    </p-panel>
+            <div class="field">
+                <label for="dateReception">Date de Réception (Optionnel)</label>
+                <p-calendar id="dateReception" formControlName="dateReception" [showIcon]="true" dateFormat="dd/mm/yy" inputId="dateReceptionInput" appendTo="body"></p-calendar>
+            </div>
+
+            <div class="p-dialog-footer flex justify-content-end mt-4">
+                <p-button label="Annuler" icon="pi pi-times" styleClass="p-button-text" (click)="hideLotDialog()"></p-button>
+                <p-button label="{{isLotEditMode ? 'Mettre à jour' : 'Sauvegarder'}}" icon="pi pi-check" type="submit" [loading]="isSavingLot"></p-button>
+            </div>
+        </form>
+    </p-dialog>
+
   </div>
 </div>

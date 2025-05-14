@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core'; // Added OnDestroy
 import {
   FormBuilder,
   FormGroup,
@@ -7,7 +7,7 @@ import {
 } from '@angular/forms';
 import { Observable, Subject, of } from 'rxjs';
 import { catchError, switchMap, takeUntil, tap } from 'rxjs/operators';
-import { MessageService } from 'primeng/api';
+import { MessageService, ConfirmationService } from 'primeng/api'; // Added ConfirmationService
 import { CommonModule } from '@angular/common';
 
 import { ToastModule } from 'primeng/toast';
@@ -17,16 +17,19 @@ import { CardModule } from 'primeng/card';
 import { TableModule } from 'primeng/table';
 import { BadgeModule } from 'primeng/badge';
 import { InputNumberModule } from 'primeng/inputnumber';
-import { InputTextarea } from 'primeng/inputtextarea';
+// import { InputTextarea } from 'primeng/inputtextarea'; // Removed if not used for lots
 import { ButtonModule } from 'primeng/button';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { DialogModule } from 'primeng/dialog'; // Added DialogModule
+import { CalendarModule } from 'primeng/calendar'; // Added CalendarModule
+import { InputTextModule } from 'primeng/inputtext'; // Added InputTextModule
 
 import { StockService } from '../../service/stock.service';
 import { Produit } from '../../models/Produit';
 import { LotDeStock } from '../../models/LotDeStock';
-import { MouvementStock, TypeMouvement } from '../../models/MouvementStock';
+// import { MouvementStock, TypeMouvement } from '../../models/MouvementStock'; // Removed
+import { ConfirmDialogModule } from 'primeng/confirmdialog'; // Import ConfirmDialogModule
 
-// Define the specific type for badge severity
 type BadgeSeverity =
   | 'info'
   | 'success'
@@ -42,82 +45,114 @@ type BadgeSeverity =
     CommonModule,
     ReactiveFormsModule,
     ToastModule,
+    ConfirmDialogModule,
     PanelModule,
     DropdownModule,
     CardModule,
     TableModule,
     BadgeModule,
     InputNumberModule,
-    InputTextarea,
+    // InputTextarea, // Removed if not used for lots
     ButtonModule,
     ProgressSpinnerModule,
+    DialogModule, // Added
+    CalendarModule, // Added
+    InputTextModule // Added
   ],
   templateUrl: './stock.component.html',
-  // styleUrls: ['./stock.component.css'] // Décommentez si vous créez un fichier CSS
-  providers: [MessageService], // Fournir MessageService ici si p-toast est dans ce template
+  providers: [MessageService, ConfirmationService], // Added ConfirmationService
 })
-export class StockComponent implements OnInit {
+export class StockComponent implements OnInit, OnDestroy {
   produits: Produit[] = [];
   lots: LotDeStock[] = [];
   selectedProduit: Produit | null = null;
-  mouvementForm!: FormGroup;
+  
+  produitSelectionForm!: FormGroup; // For selecting product
+  lotForm!: FormGroup; // For adding/editing lots
 
   isLoadingProduits: boolean = false;
   isLoadingLots: boolean = false;
-  isLoadingMouvement: boolean = false;
+  isSavingLot: boolean = false; // For lot save operation
 
-  typesMouvement: { label: string; value: TypeMouvement }[] = [
-    { label: 'Réception (entrée)', value: 'Reception' },
-    { label: 'Vente (sortie)', value: 'Vente' },
-    { label: 'Perte (sortie)', value: 'Perte' },
-    { label: 'Retour (entrée)', value: 'Retour' },
-  ];
+  lotDialog: boolean = false;
+  currentLot: LotDeStock = {
+        id: 0, 
+    numeroLot: '',
+    dateExpiration: '', 
+    quantite: 0, 
+    prixAchatHT: undefined, 
+    produit: undefined,
+    dateReception: undefined
+  }; // To hold lot being edited/created
+  isLotEditMode: boolean = false;
+  submittedLot: boolean = false; // For lot form submission validation
 
   private destroy$ = new Subject<void>();
 
   constructor(
     private stockService: StockService,
     private fb: FormBuilder,
-    private messageService: MessageService
+    private messageService: MessageService,
+    private confirmationService: ConfirmationService // Injected
   ) {}
 
   ngOnInit(): void {
-    this.initForm();
+    this.produitSelectionForm = this.fb.group({
+      produitId: [null, Validators.required],
+    });
+    this.initLotForm();
     this.loadProduits();
 
-    // Écouter les changements de produit pour charger les lots
-    this.mouvementForm
+    this.produitSelectionForm
       .get('produitId')
       ?.valueChanges.pipe(
         takeUntil(this.destroy$),
         tap((produitId) => {
-          this.lots = []; // Vider les lots précédents
+          this.lots = [];
           this.selectedProduit =
             this.produits.find((p) => p.id === produitId) || null;
+          if (this.selectedProduit) {
+            this.updateTotalStockForSelectedProduct(); // Initial calculation
+          }
         }),
         switchMap((produitId) => {
           if (produitId) {
-            this.isLoadingLots = true;
-            return this.stockService.getLots(produitId).pipe(
-              catchError((err) => {
-                this.messageService.add({
-                  severity: 'error',
-                  summary: 'Erreur',
-                  detail: 'Impossible de charger les lots.',
-                });
-                this.isLoadingLots = false;
-                return []; // Retourne un observable vide en cas d'erreur
-              })
-            );
+            return this.fetchLotsForProduct(produitId);
           } else {
-            return []; // Pas d'ID produit, retourne un observable vide
+            return of([]);
           }
         })
       )
-      .subscribe((lots) => {
-        this.lots = lots;
+      .subscribe(); // Handled by fetchLotsForProduct
+  }
+
+  fetchLotsForProduct(produitId: number): Observable<LotDeStock[]> {
+    this.isLoadingLots = true;
+    return this.stockService.getLots(produitId).pipe(
+      tap(loadedLots => {
+        this.lots = loadedLots;
         this.isLoadingLots = false;
-      });
+        this.updateTotalStockForSelectedProduct();
+      }),
+      catchError((err) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Erreur',
+          detail: 'Impossible de charger les lots.',
+        });
+        this.isLoadingLots = false;
+        return of([]);
+      })
+    );
+  }
+  
+  updateTotalStockForSelectedProduct(): void {
+    if (this.selectedProduit) {
+      this.selectedProduit.quantiteTotaleEnStock = this.lots.reduce(
+        (sum, lot) => sum + (lot.quantite || 0), // Ensure lot.quantite is a number
+        0
+      );
+    }
   }
 
   ngOnDestroy(): void {
@@ -125,12 +160,15 @@ export class StockComponent implements OnInit {
     this.destroy$.complete();
   }
 
-  initForm(): void {
-    this.mouvementForm = this.fb.group({
-      produitId: [null, Validators.required],
-      typeMouvement: [null, Validators.required],
+
+   initLotForm(): void {
+    this.lotForm = this.fb.group({
+      id: [null],
+      numeroLot: ['', Validators.required],
+      dateExpiration: [null, Validators.required],
       quantite: [null, [Validators.required, Validators.min(1)]],
-      motif: [''], // Motif n'est pas requis
+      prixAchatHT: [null, [Validators.required, Validators.min(0.01)]], // MODIFIÉ: rendu requis
+      dateReception: [null], 
     });
   }
 
@@ -147,7 +185,7 @@ export class StockComponent implements OnInit {
             detail: 'Impossible de charger les produits.',
           });
           this.isLoadingProduits = false;
-          return [];
+          return of([]);
         })
       )
       .subscribe((produits) => {
@@ -156,121 +194,177 @@ export class StockComponent implements OnInit {
       });
   }
 
-  ajouterMouvement(): void {
-    if (this.mouvementForm.invalid) {
-      // Marquer tous les champs comme touchés pour afficher les erreurs
-      this.mouvementForm.markAllAsTouched();
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Attention',
-        detail: 'Veuillez remplir tous les champs requis.',
+  openNewLotDialog(): void {
+    if (!this.selectedProduit || this.selectedProduit.id === undefined) {
+        this.messageService.add({ severity: 'warn', summary: 'Attention', detail: 'Veuillez d\'abord sélectionner un produit.' });
+        return;
+    }
+    this.isLotEditMode = false;
+    this.submittedLot = false;
+    this.currentLot = {
+          id: 0, 
+    numeroLot: '',
+    dateExpiration: '', 
+    quantite: 0, 
+    prixAchatHT: undefined, 
+    produit: undefined,
+    dateReception: undefined
+    }; // Reset
+    this.lotForm.reset(); // Clear form
+    this.lotDialog = true;
+  }
+
+  openEditLotDialog(lot: LotDeStock): void {
+    this.isLotEditMode = true;
+    this.submittedLot = false;
+    this.currentLot = { ...lot }; // Copy lot data
+    // Convert date strings to Date objects for p-calendar
+    const dateExpiration = lot.dateExpiration ? new Date(lot.dateExpiration) : null;
+    const dateReception = lot.dateReception ? new Date(lot.dateReception) : null;
+
+    this.lotForm.patchValue({
+        ...lot,
+        dateExpiration: dateExpiration,
+        dateReception: dateReception
+    });
+    this.lotDialog = true;
+  }
+
+  hideLotDialog(): void {
+    this.lotDialog = false;
+    this.submittedLot = false;
+    this.lotForm.reset();
+    this.currentLot = {
+    id: 0, 
+    numeroLot: '',
+    dateExpiration: '', 
+    quantite: 0, 
+    prixAchatHT: undefined, 
+    produit: undefined,
+    dateReception: undefined 
+    };
+  }
+  
+  saveLot(): void {
+    this.submittedLot = true;
+    if (this.lotForm.invalid) {
+      this.messageService.add({ severity: 'warn', summary: 'Validation', detail: 'Veuillez remplir tous les champs requis du lot.' });
+      Object.values(this.lotForm.controls).forEach(control => {
+        control.markAsTouched();
       });
       return;
     }
 
-    this.isLoadingMouvement = true;
-    const mouvementData: MouvementStock = this.mouvementForm.value;
+    if (!this.selectedProduit || this.selectedProduit.id === undefined) {
+        this.messageService.add({ severity: 'error', summary: 'Erreur Produit', detail: 'Produit non sélectionné pour l\'opération.' });
+        return;
+    }
 
-    this.stockService
-      .ajouterMouvement(mouvementData)
-      .pipe(
+    this.isSavingLot = true;
+    const lotDataFromForm = this.lotForm.value;
+    const dateExpirationFormatted = lotDataFromForm.dateExpiration ? new Date(lotDataFromForm.dateExpiration).toISOString().split('T')[0] : '';
+
+    let saveObservable: Observable<LotDeStock>;
+
+    if (this.isLotEditMode && this.currentLot.id) {
+      const updatePayload: LotDeStock = {
+        id: this.currentLot.id,
+        numeroLot: lotDataFromForm.numeroLot,
+        dateExpiration: dateExpirationFormatted,
+        quantite: lotDataFromForm.quantite,
+        prixAchatHT: lotDataFromForm.prixAchatHT,
+        dateReception: lotDataFromForm.dateReception ? new Date(lotDataFromForm.dateReception).toISOString().split('T')[0] : undefined,
+      };
+      saveObservable = this.stockService.updateLot(this.currentLot.id, updatePayload);
+    } else {
+      // MODIFIÉ: section pour la création
+      const createPayload = {
+        numeroLot: lotDataFromForm.numeroLot,
+        dateExpiration: dateExpirationFormatted,
+        quantite: lotDataFromForm.quantite,
+        prixAchatHT: lotDataFromForm.prixAchatHT,
+      };
+      saveObservable = this.stockService.createLot(this.selectedProduit.id, createPayload);
+    }
+
+    saveObservable.pipe(
         takeUntil(this.destroy$),
-        catchError((err) => {
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Erreur',
-            detail: "Échec de l'ajout du mouvement.",
-          });
-          this.isLoadingMouvement = false;
-          return of([]);
+        catchError(err => {
+            this.messageService.add({ severity: 'error', summary: 'Erreur Sauvegarde', detail: err.message || 'Échec de la sauvegarde du lot.' });
+            this.isSavingLot = false;
+            return of(null); 
         })
-      )
-      .subscribe((response) => {
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Succès',
-          detail: 'Mouvement ajouté avec succès.',
+    ).subscribe(savedLotResponse => {
+        if (savedLotResponse) {
+            this.messageService.add({ severity: 'success', summary: 'Succès', detail: `Lot ${this.isLotEditMode ? 'mis à jour' : 'ajouté'} avec succès.` });
+            this.hideLotDialog();
+            if (this.selectedProduit && this.selectedProduit.id) {
+                 this.fetchLotsForProduct(this.selectedProduit.id).subscribe();
+            }
+        }
+        this.isSavingLot = false;
+    });
+  }
+
+  deleteLot(lot: LotDeStock): void {
+    if (lot.id === undefined) return;
+    this.confirmationService.confirm({
+      message: `Êtes-vous sûr de vouloir supprimer le lot n° ${lot.numeroLot} ?`,
+      header: 'Confirmation de suppression',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Oui',
+      rejectLabel: 'Non',
+      accept: () => {
+        if (lot.id === undefined) return; // Double check
+        this.stockService.deleteLot(lot.id).pipe(
+            takeUntil(this.destroy$),
+            catchError(err => {
+                this.messageService.add({ severity: 'error', summary: 'Erreur', detail: `Échec de la suppression du lot. ${err.message || ''}` });
+                return of(null);
+            })
+        ).subscribe(response => {
+            if (response !== null) { // Check if deletion was successful (void observable will complete)
+                this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Lot supprimé avec succès.' });
+                if (this.selectedProduit && this.selectedProduit.id) {
+                    this.fetchLotsForProduct(this.selectedProduit.id).subscribe(); // Refresh lots
+                }
+            }
         });
-        this.isLoadingMouvement = false;
-        this.mouvementForm.reset(); // Réinitialiser le formulaire
-        // Recharger les lots pour voir la mise à jour
-        const currentProductId = mouvementData.produitId;
-        this.mouvementForm.patchValue({ produitId: currentProductId }); // Remettre l'ID produit pour déclencher valueChanges si nécessaire
-        // Ou déclencher manuellement le rechargement si valueChanges ne se déclenche pas après reset
-        if (currentProductId) {
-          this.reloadLots(currentProductId);
-        }
-      });
+      }
+    });
   }
 
-  reloadLots(produitId: number): void {
-    this.isLoadingLots = true;
-    this.stockService
-      .getLots(produitId)
-      .pipe(
-        takeUntil(this.destroy$),
-        catchError((err) => {
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Erreur',
-            detail: 'Impossible de recharger les lots.',
-          });
-          this.isLoadingLots = false;
-          return [];
-        })
-      )
-      .subscribe((lots) => {
-        this.lots = lots;
-        this.isLoadingLots = false;
-        // Mettre à jour aussi la quantité totale dans selectedProduit si l'API ne la renvoie pas dans getLots
-        if (this.selectedProduit) {
-          this.selectedProduit.quantiteTotaleEnStock = this.lots.reduce(
-            (sum, lot) => sum + lot.quantite,
-            0
-          );
-        }
-      });
+  reloadLots(produitId: number): void { // Kept for potential direct use, but fetchLotsForProduct is preferred
+    this.fetchLotsForProduct(produitId).subscribe();
   }
-
-  // --- Logique pour les Badges ---
 
   isDateExpirationProche(
-    dateExpirationStr: string | Date | undefined,
+    dateExpirationStr: string | Date | undefined | null, // Allow null
     joursSeuil: number = 30
   ): boolean {
     if (!dateExpirationStr) return false;
     const dateExpiration = new Date(dateExpirationStr);
-    console.log(dateExpiration)
-    const maintenant = new Date();
-    const dateSeuil = new Date();
-    dateSeuil.setDate(maintenant.getDate() + joursSeuil);
-    // Handle invalid date string/object
     if (isNaN(dateExpiration.getTime())) {
-      console.error(
-        'Invalid date provided for expiration check:',
-        dateExpirationStr
-      );
+      console.error('Date invalide pour vérification expiration:', dateExpirationStr);
       return false;
     }
-    return dateExpiration <= dateSeuil;
+    const maintenant = new Date();
+    maintenant.setHours(0, 0, 0, 0); // Compare dates only
+    const dateSeuil = new Date(maintenant);
+    dateSeuil.setDate(maintenant.getDate() + joursSeuil);
+    
+    return dateExpiration <= dateSeuil && dateExpiration >= maintenant; // Expired or expiring soon, but not past
   }
 
-  isStockBas(quantite: number | undefined): boolean {
-    // Check if quantite is defined and not null
-    if (quantite === undefined || quantite === null) {
-      return false;
-    }
-    // Check if selectedProduit and seuilStock are defined
+  isStockBas(quantite: number | undefined | null): boolean { // Allow null
+    if (quantite === undefined || quantite === null) return false; // Or true if undefined means critical
     if (
       !this.selectedProduit ||
       this.selectedProduit.seuilStock === undefined ||
       this.selectedProduit.seuilStock === null
     ) {
-      // If no threshold is set, maybe don't consider it low? Or decide on default behavior.
-      // For now, return false if threshold isn't set.
-      return false;
+      return quantite <= 0; // Default to low if 0 or less and no threshold
     }
-    // Consider 0 or less as low stock, or below/equal to threshold
     return quantite <= this.selectedProduit.seuilStock;
   }
 
@@ -278,21 +372,22 @@ export class StockComponent implements OnInit {
     const expirationProche = this.isDateExpirationProche(lot.dateExpiration);
     const stockBas = this.isStockBas(lot.quantite);
 
-    if (expirationProche || stockBas) {
-      return 'danger'; // Matches BadgeSeverity
-    }
-    return 'info'; // Matches BadgeSeverity
+    if (new Date(lot.dateExpiration || 0) < new Date()) return 'danger'; // Already expired
+    if (expirationProche && stockBas) return 'danger';
+    if (expirationProche || stockBas) return 'warn'; // Changed to warn for single condition
+    
+    return 'success'; // Changed to success for "En stock"
   }
 
   getBadgeValue(lot: LotDeStock): string {
+    if (new Date(lot.dateExpiration || 0) < new Date()) return 'Expiré';
     const expirationProche = this.isDateExpirationProche(lot.dateExpiration);
-    console.log(expirationProche)
     const stockBas = this.isStockBas(lot.quantite);
 
     if (expirationProche && stockBas) return 'Stock bas / Exp. proche';
     if (expirationProche) return 'Exp. proche';
     if (stockBas) return 'Stock bas';
 
-    return 'En stock'; // Return empty string instead of null
+    return 'En stock';
   }
 }
