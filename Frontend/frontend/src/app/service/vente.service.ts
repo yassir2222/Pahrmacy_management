@@ -83,13 +83,7 @@ export class VenteService {
   /**
    * Supprime une vente.
    */
-  deleteVente(id: number): Observable<void | string> { // Backend returns 204 No Content (void) or error string
-    return this.http.delete<void>(`${this.apiUrl}/${id}`) // HTTP DELETE ne renvoie généralement pas de corps pour void
-      .pipe(
-        tap(() => console.log(`Vente ${id} supprimée`)),
-        catchError(this.handleErrorExtended) // handleErrorExtended peut gérer les erreurs textuelles
-      );
-  }
+
 
   private handleErrorExtended(error: HttpErrorResponse): Observable<never | string> {
     let errorMessage = 'Une erreur inconnue est survenue!';
@@ -125,5 +119,12 @@ export class VenteService {
     }
     console.error(errorMessage);
     return throwError(() => new Error(errorMessage));
+  }
+    deleteVente(id: number): Observable<void | string> { // Backend returns 204 No Content (void) or error string
+    return this.http.delete<void>(`${this.apiUrl}/${id}`) // HTTP DELETE ne renvoie généralement pas de corps pour void
+      .pipe(
+        tap(() => console.log(`Vente ${id} supprimée`)),
+        catchError(this.handleErrorExtended) // handleErrorExtended peut gérer les erreurs textuelles
+      );
   }
 }

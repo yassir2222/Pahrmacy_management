@@ -5,7 +5,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators ,FormsModule} f
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { Observable, of, throwError, forkJoin } from 'rxjs';
 import { catchError, delay, tap } from 'rxjs/operators';
-
+import { DividerModule } from 'primeng/divider';
 // PrimeNG Modules (déjà présents dans vos imports standalone)
 import { PanelModule } from 'primeng/panel';
 import { DropdownModule } from 'primeng/dropdown';
@@ -61,6 +61,7 @@ interface ProduitPanier extends Produit {
     InputNumberModule,
     BadgeModule,
     TooltipModule,
+    DividerModule,
     FormsModule,
     ProgressSpinnerModule
     // ... autres modules PrimeNG que vous utilisez
@@ -468,12 +469,22 @@ export class VenteComponent implements OnInit {
 
   // Add this method
   showVenteDetails(vente: Vente): void {
-    this.selectedVenteForDetails = vente;
-    this.venteDetailsDialogVisible = true;
+    // Ensure 'vente' is a valid object before assigning
+    if (vente && typeof vente.id === 'number') {
+      this.selectedVenteForDetails = { ...vente }; // Create a new object reference, helps with change detection
+      console.log('Assigned to selectedVenteForDetails:', JSON.parse(JSON.stringify(this.selectedVenteForDetails)));
+      this.venteDetailsDialogVisible = true; // Make visible AFTER data is set
+    } else {
+      console.error('showVenteDetails called with invalid vente object:', vente);
+      this.messageService.add({ severity: 'error', summary: 'Erreur Données', detail: 'Impossible d\'afficher les détails de la vente.' });
+      this.selectedVenteForDetails = null; // Ensure it's null if data is bad
+      this.venteDetailsDialogVisible = false;
+    }
   }
 
   hideVenteDetailsDialog(): void {
     this.venteDetailsDialogVisible = false;
+
     this.selectedVenteForDetails = null;
   }
 

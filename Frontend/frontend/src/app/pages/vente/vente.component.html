@@ -1,5 +1,5 @@
 <p-toast></p-toast>
-<p-confirmDialog [style]="{width: '450px'}" key="deleteLotConfirmation"></p-confirmDialog>
+<p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>
 
 <div class="grid p-fluid">
 
@@ -73,25 +73,28 @@
 <div class="col-12 md:col-6">
     <p-panel header="Historique des Ventes">
       <p-button label="Actualiser" icon="pi pi-refresh" (click)="loadHistoriqueVentes()" [loading]="isLoadingHistorique" styleClass="p-button-sm mb-2"></p-button>
-      <p-table [value]="historiqueVentes" [loading]="isLoadingHistorique" [rows]="5" [paginator]="true" responsiveLayout="scroll" styleClass="p-datatable-sm">
+  <p-table [value]="historiqueVentes" [loading]="isLoadingHistorique" [rows]="5" [paginator]="true" responsiveLayout="scroll" styleClass="p-datatable-sm responsive-table">
         <ng-template pTemplate="header">
           <tr>
             <th pSortableColumn="id">ID <p-sortIcon field="id"></p-sortIcon></th>
             <th pSortableColumn="dateVente">Date <p-sortIcon field="dateVente"></p-sortIcon></th>
             <th pSortableColumn="montantTotal">Total <p-sortIcon field="montantTotal"></p-sortIcon></th>
-            <th>Utilisateur</th>
-            
-            <th>Actions</th> <!-- NOUVELLE COLONNE -->
+            <!-- Colonne Utilisateur supprimée ou commentée -->
+            <!-- <th>Utilisateur</th> -->
+            <th>Lignes</th> <!-- Nouvelle entête pour le nombre de lignes/produits -->
+            <th>Actions</th>
           </tr>
         </ng-template>
-    <ng-template pTemplate="body" let-vente>
+        <ng-template pTemplate="body" let-vente>
           <tr>
             <td data-label="ID">{{vente.id}}</td>
             <td data-label="Date">{{vente.dateVente | date:'dd/MM/yyyy HH:mm'}}</td>
-            <td data-label="Total">{{vente.montantTotal | currency:'EUR'}}</td>
+            <td data-label="Total">{{vente.montantTotal | currency:'DH'}}</td>
+            <!-- Donnée Utilisateur supprimée ou commentée -->
             <!-- <td data-label="Utilisateur">{{vente.utilisateur?.username || vente.utilisateur?.id || 'N/A'}}</td> -->
-            <td data-label="Détails">
-                <button pButton pRipple type="button" icon="pi pi-eye" class="p-button-rounded p-button-text p-button-info" (click)="showVenteDetails(vente)" pTooltip="Voir détails" tooltipPosition="top"></button>
+            <td data-label="Lignes">
+                {{vente.lignesVente?.length || 0}} produit(s)
+                <button pButton pRipple type="button" icon="pi pi-eye" class="p-button-rounded p-button-text p-button-info ml-2" (click)="showVenteDetails(vente)" pTooltip="Voir détails des produits" tooltipPosition="top"></button>
             </td>
             <td data-label="Actions">
                 <button pButton pRipple type="button" icon="pi pi-pencil" class="p-button-rounded p-button-warning p-button-text mr-2" (click)="openEditVenteDialog(vente)" pTooltip="Modifier Vente" tooltipPosition="top"></button>
@@ -100,12 +103,87 @@
           </tr>
         </ng-template>
         <ng-template pTemplate="emptymessage">
-          <!-- Modifiez colspan pour inclure la nouvelle colonne -->
-          <tr><td colspan="6" class="text-center">Aucune vente dans l'historique.</td></tr>
+          <!-- Ajustez colspan en fonction du nombre final de colonnes visibles -->
+          <tr><td colspan="5" class="text-center">Aucune vente dans l'historique.</td></tr>
         </ng-template>
       </p-table>
     </p-panel>
   </div>
+<p-dialog header="Détails de la Vente N°{{selectedVenteForDetails?.id}}" 
+          [(visible)]="venteDetailsDialogVisible" 
+          [modal]="true" 
+          [style]="{width: '60vw', 'min-width': '480px', 'max-width': '700px'}" 
+          (onHide)="hideVenteDetailsDialog()">
+    
+    <ng-template pTemplate="content">
+        <div *ngIf="selectedVenteForDetails; else noDetailsSelected">
+            <div class="sale-details-content p-3">
+
+                <div class="grid mb-3">
+                    <div class="col-12 md:col-6">
+                        <div class="flex align-items-center">
+                            <i class="pi pi-calendar mr-2" style="font-size: 1.5rem; color: var(--primary-color);"></i>
+                            <div>
+                                <span class="text-sm text-color-secondary">Date de la Vente</span>
+                                <p class="font-semibold text-lg mt-0 mb-0">{{ selectedVenteForDetails.dateVente | date:'dd/MM/yyyy HH:mm' }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 md:col-6">
+                        <div class="flex align-items-center">
+                            <i class="pi pi-tag mr-2" style="font-size: 1.5rem; color: var(--green-500);"></i>
+                            <div>
+                                <span class="text-sm text-color-secondary">Montant Total</span>
+                                <p class="font-semibold text-lg mt-0 mb-0">{{ selectedVenteForDetails.montantTotal | currency:'DH' }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <p-divider layout="horizontal" styleClass="my-4"></p-divider>
+
+                <h5 class="mt-0 mb-3 font-semibold">Articles Vendus</h5>
+                <div *ngIf="selectedVenteForDetails.lignesVente && selectedVenteForDetails.lignesVente.length > 0; else noLignesVenteBlock">
+                    <p-table [value]="selectedVenteForDetails.lignesVente" styleClass="p-datatable-sm responsive-table" responsiveLayout="scroll">
+                        <ng-template pTemplate="header">
+                            <tr>
+                                <th>Produit</th>
+                                <th class="text-right">Quantité</th>
+                                <th class="text-right">Prix Unit.</th>
+                                <th class="text-right">Total Ligne</th>
+                            </tr>
+                        </ng-template>
+                        <ng-template pTemplate="body" let-ligne>
+                            <tr>
+                                <td data-label="Produit">{{ ligne.produit?.nomMedicament || 'Produit Inconnu' }}</td>
+                                <td data-label="Quantité" class="text-right">{{ ligne.quantite }}</td>
+                                <td data-label="Prix Unit. Vendu" class="text-right">{{ ligne.prixVenteTTC | currency:'DH' }}</td>
+                                <td data-label="Total Ligne" class="text-right">{{ ligne.montantTotalLigne | currency:'DH' }}</td>
+                            </tr>
+                        </ng-template>
+                    </p-table>
+                </div>
+                <ng-template #noLignesVenteBlock>
+                    <div class="text-center p-3">
+                        <i class="pi pi-info-circle text-2xl text-color-secondary mb-2"></i>
+                        <p class="text-color-secondary">Aucun article trouvé pour cette vente.</p>
+                    </div>
+                </ng-template>
+            </div>
+        </div>
+        <ng-template #noDetailsSelected>
+            <div class="text-center p-3">
+                 <i class="pi pi-info-circle text-2xl text-color-secondary mb-2"></i>
+                <p class="text-color-secondary">Aucun détail de vente à afficher.</p>
+            </div>
+        </ng-template>
+    </ng-template>
+
+    <ng-template pTemplate="footer">
+        <p-button label="Fermer" icon="pi pi-times" (click)="hideVenteDetailsDialog()" styleClass="p-button-text"></p-button>
+    </ng-template>
+</p-dialog>
+
 <!-- Dialogue pour Éditer une Vente -->
 <p-dialog header="Modifier la Vente" [(visible)]="editVenteDialogVisible" [modal]="true" [style]="{width: '70vw', 'min-width': '500px'}" (onHide)="hideEditVenteDialog()">
     <ng-template pTemplate="content">
