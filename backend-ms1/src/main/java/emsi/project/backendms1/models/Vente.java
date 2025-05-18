@@ -1,4 +1,6 @@
 package emsi.project.backendms1.models;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 
 import lombok.AllArgsConstructor;
@@ -26,11 +28,10 @@ public class Vente {
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal montantTotal;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "utilisateur_id", nullable = false)
-    private User utilisateur;
+
 
     @OneToMany(mappedBy = "vente", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonManagedReference("vente-lignes")
     private List<LigneVente> lignesVente = new ArrayList<>();
 
     public Long getId() {
@@ -57,13 +58,6 @@ public class Vente {
         this.montantTotal = montantTotal;
     }
 
-    public User getUtilisateur() {
-        return utilisateur;
-    }
-
-    public void setUtilisateur(User utilisateur) {
-        this.utilisateur = utilisateur;
-    }
 
     public List<LigneVente> getLignesVente() {
         return lignesVente;

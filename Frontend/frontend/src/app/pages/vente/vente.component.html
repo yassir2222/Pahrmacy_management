@@ -1,231 +1,130 @@
 <p-toast></p-toast>
-<div class="vente-container p-fluid">
-  <form [formGroup]="venteForm" (ngSubmit)="validerVente()">
-    <p-card header="Informations Générales de la Vente">
-      <div class="grid formgrid p-fluid">
-        <div class="field col-12 md:col-6">
-          <label for="utilisateur">Vendeur</label>
-          <p-dropdown
-            id="utilisateur"
-            formControlName="utilisateurId"
-            [options]="utilisateurs"
-            optionLabel="username"
-            optionValue="id"
-            placeholder="Sélectionner un vendeur"
-            [filter]="true"
-            filterBy="username,nom,prenom"
-            [showClear]="true"
-            [style]="{ width: '100%' }"
-            [loading]="isLoadingUtilisateurs"
-          >
-            <ng-template let-user pTemplate="item">
-              <div class="flex align-items-center">
-                <span class="pi pi-user mr-2"></span>
-                <div>{{ user.nom || '' }} {{ user.prenom || '' }} <small>({{ user.username }})</small></div>
-              </div>
-            </ng-template>
-            <ng-template let-user pTemplate="selectedItem">
-              <div class="flex align-items-center">
-                <span class="pi pi-user mr-2"></span>
-                <div>{{ user.nom || '' }} {{ user.prenom || '' }} <small>({{ user.username }})</small></div>
-              </div>
+<p-confirmDialog [style]="{width: '450px'}" key="deleteLotConfirmation"></p-confirmDialog>
+
+<div class="grid p-fluid">
+
+  <!-- Section Nouvelle Vente -->
+  <div class="col-12 md:col-6">
+    <p-panel header="Nouvelle Vente">
+      <div class="p-fluid">
+        <div class="field">
+          <label for="produitVenteSelect">Produit</label>
+          <p-dropdown id="produitVenteSelect"
+                      [options]="produitsDisponiblesPourVente"
+                      [(ngModel)]="selectedProduitIdPourPanier"
+                      optionLabel="nomMedicament"
+                      optionValue="id"
+                      placeholder="Sélectionner un produit"
+                      [filter]="true" filterBy="nomMedicament" [showClear]="true"
+                      [style]="{width: '100%'}"
+                      [loading]="isLoadingVente && produitsDisponiblesPourVente.length === 0">
+            <ng-template let-produit pTemplate="item">
+              <div>{{produit.nomMedicament}} (Stock: {{produit.quantiteTotaleEnStock}}, Prix: {{produit.prixVenteTTC | currency:'EUR'}})</div>
             </ng-template>
           </p-dropdown>
-          <small
-            class="p-error"
-            *ngIf="venteForm.get('utilisateurId')?.touched && venteForm.get('utilisateurId')?.errors?.['required']"
-          >
-            Le vendeur est requis.
-          </small>
         </div>
-
-        <div class="field col-12 md:col-6">
-          <label for="dateVente">Date de la Vente</label>
-          <p-calendar
-            id="dateVente"
-            formControlName="dateVente"
-            dateFormat="dd/mm/yy"
-            [showIcon]="true"
-            inputId="dateVenteInput"
-            [style]="{ width: '100%' }"
-          >
-          </p-calendar>
-          <small
-            class="p-error"
-            *ngIf="venteForm.get('dateVente')?.touched && venteForm.get('dateVente')?.errors?.['required']"
-          >
-            La date est requise.
-          </small>
+        <div class="field">
+          <label for="quantiteVenteInput">Quantité</label>
+          <p-inputNumber id="quantiteVenteInput" [(ngModel)]="quantitePourProduitPanier" [min]="1" [showButtons]="true"></p-inputNumber>
         </div>
-      </div>
-    </p-card>
-
-    <p-divider></p-divider>
-
-    <p-card header="Lignes de Vente">
-      <div class="mb-3">
-        <p-button
-          label="Ajouter une ligne"
-          icon="pi pi-plus"
-          (click)="addLigneVente()"
-          styleClass="p-button-sm p-button-success"
-        ></p-button>
+        <p-button label="Ajouter au Panier" icon="pi pi-plus" (click)="ajouterAuPanier()" [disabled]="!selectedProduitIdPourPanier || quantitePourProduitPanier <= 0"></p-button>
       </div>
 
-      <p-table
-        [value]="lignes.controls"
-        formArrayName="lignes"
-        styleClass="p-datatable-sm editable-cells-table"
-      >
+      <h4 class="mt-4">Panier Actuel</h4>
+      <div *ngIf="panier.length === 0" class="text-center my-3">Le panier est vide.</div>
+      <p-table *ngIf="panier.length > 0" [value]="panier" styleClass="p-datatable-sm">
         <ng-template pTemplate="header">
           <tr>
-            <th style="width: 40%">Produit</th>
-            <th style="width: 15%">Quantité</th>
-            <th style="width: 20%">Prix Unitaire</th>
-            <th style="width: 20%">Prix Total Ligne</th>
-            <th style="width: 5%">Actions</th>
+            <th>Produit</th>
+            <th>Qté</th>
+            <th>Prix Unit.</th>
+            <th>Sous-total</th>
+            <th>Action</th>
           </tr>
         </ng-template>
-        <ng-template pTemplate="body" let-ligne let-i="rowIndex">
-          <tr [formGroupName]="i">
+        <ng-template pTemplate="body" let-item>
+          <tr>
+            <td>{{item.nomMedicament}}</td>
+            <td>{{item.quantiteAVendre}}</td>
+            <td>{{item.prixVenteTTC | currency:'EUR'}}</td>
+            <td>{{(item.prixVenteTTC * item.quantiteAVendre) | currency:'EUR'}}</td>
+            <td><p-button icon="pi pi-trash" styleClass="p-button-danger p-button-sm" (click)="retirerDuPanier(item.id)"></p-button></td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="footer">
+          <tr>
+            <td colspan="3" class="text-right"><strong>Total:</strong></td>
+            <td colspan="2"><strong>{{calculerTotalPanier() | currency:'EUR'}}</strong></td>
+          </tr>
+        </ng-template>
+      </p-table>
+      <div class="mt-3 text-right" *ngIf="panier.length > 0">
+        <!-- TODO: Ajouter sélection utilisateur si nécessaire -->
+        <!-- <div class="field">
+          <label for="userVenteSelect">Vendeur (Utilisateur ID: {{currentUserId}})</label>
+           <p-dropdown placeholder="Sélectionner Vendeur" ...></p-dropdown>
+        </div> -->
+        <p-button label="Finaliser la Vente" icon="pi pi-check" (click)="finaliserVente()" [loading]="isLoadingVente" styleClass="p-button-success"></p-button>
+      </div>
+    </p-panel>
+  </div>
+
+  <!-- Section Historique des Ventes -->
+<div class="col-12 md:col-6">
+    <p-panel header="Historique des Ventes">
+      <p-button label="Actualiser" icon="pi pi-refresh" (click)="loadHistoriqueVentes()" [loading]="isLoadingHistorique" styleClass="p-button-sm mb-2"></p-button>
+      <p-table [value]="historiqueVentes" [loading]="isLoadingHistorique" [rows]="5" [paginator]="true" responsiveLayout="scroll" styleClass="p-datatable-sm">
+        <ng-template pTemplate="header">
+          <tr>
+            <th pSortableColumn="id">ID <p-sortIcon field="id"></p-sortIcon></th>
+            <th pSortableColumn="dateVente">Date <p-sortIcon field="dateVente"></p-sortIcon></th>
+            <th pSortableColumn="montantTotal">Total <p-sortIcon field="montantTotal"></p-sortIcon></th>
+            <th>Utilisateur</th>
+            <th>Détails</th>
+            <th>Actions</th> <!-- NOUVELLE COLONNE -->
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-vente>
+          <tr>
+            <td>{{vente.id}}</td>
+            <td>{{vente.dateVente | date:'dd/MM/yyyy HH:mm'}}</td>
+            <td>{{vente.montantTotal | currency:'EUR'}}</td>
+            <td>{{vente.utilisateur?.username || vente.utilisateur?.id || 'N/A'}}</td>
             <td>
-              <p-dropdown
-                formControlName="produitId"
-                [options]="produits"
-                optionLabel="nomMedicament"
-                optionValue="id"
-                placeholder="Choisir produit"
-                (onChange)="onProductChange(i)"
-                [filter]="true"
-                filterBy="nomMedicament"
-                [style]="{ width: '100%' }"
-                [loading]="isLoadingProduits"
-              >
-              </p-dropdown>
-              <small
-                class="p-error"
-                *ngIf="ligne.get('produitId')?.touched && ligne.get('produitId')?.errors?.['required']"
-              >
-                Produit requis.
-              </small>
+                <button pButton pRipple type="button" icon="pi pi-eye" class="p-button-rounded p-button-text" (click)="showVenteDetails(vente)" pTooltip="Voir détails" tooltipPosition="top"></button>
             </td>
-            <td>
-              <p-inputNumber
-                formControlName="quantite"
-                mode="decimal"
-                [min]="1"
-                [showButtons]="true"
-                inputId="quantiteInput-{{ i }}"
-                (onInput)="onQuantityChange(i)"
-                [style]="{ width: '100%' }"
-              >
-              </p-inputNumber>
-              <small
-                class="p-error"
-                *ngIf="ligne.get('quantite')?.touched && ligne.get('quantite')?.errors?.['required']"
-              >
-                Qté requise.
-              </small>
-              <small
-                class="p-error"
-                *ngIf="ligne.get('quantite')?.touched && ligne.get('quantite')?.errors?.['min']"
-              >
-                Min 1.
-              </small>
-            </td>
-            <td>
-              <input
-                pInputText
-                type="text"
-                formControlName="prixUnitaire"
-                readonly
-                class="text-right"
-              />
-              <!-- Affichage formaté -->
-              <span class="ml-2">{{
-                ligne.get("prixUnitaire")?.value
-                  | currency : "EUR" : "symbol" : "1.2-2" : "fr"
-              }}</span>
-            </td>
-            <td>
-              <input
-                pInputText
-                type="text"
-                formControlName="prixTotalLigne"
-                readonly
-                class="text-right"
-              />
-              <!-- Affichage formaté -->
-              <span class="ml-2">{{
-                ligne.get("prixTotalLigne")?.value
-                  | currency : "EUR" : "symbol" : "1.2-2" : "fr"
-              }}</span>
-            </td>
-            <td>
-              <p-button
-                icon="pi pi-trash"
-                styleClass="p-button-danger p-button-sm"
-                (click)="removeLigneVente(i)"
-                [disabled]="lignes.length <= 1"
-              >
-              </p-button>
+            <td> <!-- NOUVELLES ACTIONS -->
+                <button pButton pRipple type="button" icon="pi pi-pencil" class="p-button-rounded p-button-warning p-button-text mr-2" (click)="openEditVenteDialog(vente)" pTooltip="Modifier Vente" tooltipPosition="top"></button>
+                <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-rounded p-button-danger p-button-text" (click)="confirmDeleteVente(vente)" pTooltip="Supprimer Vente" tooltipPosition="top"></button>
             </td>
           </tr>
         </ng-template>
         <ng-template pTemplate="emptymessage">
-          <tr>
-            <td colspan="5">
-              Aucune ligne ajoutée. Cliquez sur "Ajouter une ligne".
-            </td>
-          </tr>
+          <!-- Modifiez colspan pour inclure la nouvelle colonne -->
+          <tr><td colspan="6" class="text-center">Aucune vente dans l'historique.</td></tr>
         </ng-template>
       </p-table>
-    </p-card>
-
-    <p-divider></p-divider>
-
-    <div class="grid">
-      <div class="col-12 text-right">
-        <h4>
-          Montant Total:
-          {{ montantTotal | currency : "EUR" : "symbol" : "1.2-2" : "fr" }}
-        </h4>
-      </div>
-    </div>
-
-    <div class="flex justify-content-end mt-4">
-      <p-button
-        label="Valider la Vente"
-        icon="pi pi-check"
-        type="submit"
-        [disabled]="venteForm.invalid || isSaving || lignes.length === 0"
-        [loading]="isSaving"
-      >
-      </p-button>
-    </div>
-  </form>
-
-  <div
-    *ngIf="isLoadingProduits || isLoadingUtilisateurs"
-    class="loading-overlay"
-  >
-    <p-progressSpinner></p-progressSpinner>
+    </p-panel>
   </div>
-</div>
+ <p-dialog header="Modifier la Vente" [(visible)]="editVenteDialogVisible" [modal]="true" [style]="{width: '70vw', 'min-width': '400px'}" (onHide)="hideEditVenteDialog()">
+    <ng-template pTemplate="content">
+      <div *ngIf="venteToEdit">
+        <p>Édition de la vente N°{{venteToEdit.id}}.</p>
+        <p class="text-orange-500">Attention: La modification complète des ventes (produits, quantités) est une opération complexe qui nécessite une logique d'interface utilisateur et un support backend robustes pour gérer les impacts sur les stocks et les totaux.</p>
+        <p>Pour l'instant, ce dialogue est un placeholder. Vous devrez implémenter un formulaire ici, potentiellement similaire à la section "Nouvelle Vente", pré-rempli avec les données de `venteToEdit`.</p>
+        
+        <!-- Exemple de champs que vous pourriez vouloir éditer -->
+        <!-- <div class="field">
+          <label for="editVenteUserId">ID Utilisateur (si modifiable)</label>
+          <input pInputText id="editVenteUserId" [(ngModel)]="venteToEdit.utilisateur.id" />
+        </div> -->
+        <!-- Ici, vous auriez une table ou une liste pour les lignes de vente, permettant de modifier les quantités, supprimer des lignes, ajouter de nouveaux produits -->
+      </div>
+    </ng-template>
+    <ng-template pTemplate="footer">
+      <p-button label="Annuler" icon="pi pi-times" (click)="hideEditVenteDialog()" styleClass="p-button-text"></p-button>
+      <p-button label="Sauvegarder Modifications" icon="pi pi-check" (click)="saveEditedVente()" [loading]="isSubmittingEditVente" styleClass="p-button-success"></p-button>
+    </ng-template>
+  </p-dialog>
 
-<!-- Ajouter un peu de CSS pour le loading overlay (optionnel) -->
-<!-- Vous pouvez mettre cela dans vente.component.css -->
-<!-- 
-.loading-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(255, 255, 255, 0.7);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000; 
-}
--->
+  </div>

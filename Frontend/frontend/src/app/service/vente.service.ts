@@ -1,119 +1,107 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, tap, map } from 'rxjs/operators';
 import { Produit } from '../models/Produit';
 import { User } from '../models/User';
 import { Vente } from '../models/Vente';
+import { VenteRequest } from '../models/VenteRequest'; // Import VenteRequest
 import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class VenteService {
-  // Backend API base URLs
-  private apiUrlRoot = environment.apiUrl;
-  private baseApiUrl = `${this.apiUrlRoot}`;
-  private produitsUrl = `${this.baseApiUrl}/produits/all`;
-  private utilisateursUrl = `${this.baseApiUrl}/users`; 
-  private ventesUrl = `${this.baseApiUrl}/ventes`;
+  private apiUrl = `${environment.apiUrl}/ventes`; // URL directe vers le VenteController backend
+  private produitsFullUrl = `${environment.apiUrl}/produits/all`; // Supposant que /api/produits existe pour tous les produits
+  private utilisateursFullUrl = `${environment.apiUrl}/users`; // Supposant que /api/users existe
 
   constructor(private http: HttpClient) {}
 
-  /**
-   * Récupère la liste des produits.
-   */
-  getProduits(): Observable<Produit[]> {
-    return this.http.get<Produit[]>(this.produitsUrl)
+  getProduitsDisponiblesPourVente(): Observable<Produit[]> {
+
+    return this.http.get<Produit[]>(`${this.produitsFullUrl}`)
       .pipe(
-        tap(data => console.log('Produits chargés:', data.length)),
+        tap(data => console.log('Produits (pour vente) chargés:', data.length)),
         catchError(this.handleError)
       );
   }
 
-  /**
-   * Récupère la liste des utilisateurs (vendeurs).
-   */
-  getUtilisateurs(): Observable<User[]> {
-    return this.http.get<User[]>(this.utilisateursUrl)
+  getUtilisateursPourVente(): Observable<User[]> {
+    return this.http.get<User[]>(this.utilisateursFullUrl) // ou un endpoint spécifique pour les vendeurs
       .pipe(
-        tap(data => console.log('Utilisateurs chargés:', data.length)),
+        tap(data => console.log('Utilisateurs (pour vente) chargés:', data.length)),
         catchError(this.handleError)
       );
   }
 
-  /**
-   * Récupère uniquement les utilisateurs ayant le rôle de vendeur.
-   * Accepte différentes variantes du rôle "vendeur".
-   */
-  getVendeurs(): Observable<User[]> {
-    return this.http.get<User[]>(this.utilisateursUrl)
-      .pipe(
-        map(users => {
-          // Si aucun utilisateur n'a de rôle de vendeur, retourner tous les utilisateurs
-          const vendeurs = users.filter(user => {
-            if (!user.role) return true; // Inclure aussi les utilisateurs sans rôle défini
-            const role = user.role.toLowerCase();
-            return role === 'vendeur' || role === 'user' || role === 'vente' || role === 'admin'; 
-          });
-          
-          // Si toujours aucun vendeur trouvé, retourner tous les utilisateurs
-          return vendeurs.length > 0 ? vendeurs : users;
-        }),
-        tap(data => console.log('Vendeurs chargés:', data.length)),
-        catchError(this.handleError)
-      );
-  }
 
-  /**
-   * Enregistre une nouvelle vente.
-   * @param venteData Les données de la vente à enregistrer.
-   */
-  ajouterVente(venteData: Vente): Observable<Vente> {
-    return this.http.post<Vente>(`${this.ventesUrl}/add`, venteData)
+  creerVente(venteRequest: VenteRequest): Observable<Vente | string> { // Le backend peut retourner un string en cas d'erreur 400
+    const httpOptions = {
+      headers: new HttpHeaders({
+        'Content-Type': 'application/json'
+      })
+    };
+    return this.http.post<Vente>(this.apiUrl, venteRequest, httpOptions)
       .pipe(
         tap(data => console.log('Vente enregistrée:', data)),
-        catchError(this.handleError)
+        catchError(this.handleErrorExtended) // Utiliser un handler qui peut retourner string
       );
   }
-  
-  /**
-   * Récupère l'historique des ventes
-   */
-  getVentes(): Observable<Vente[]> {
-    return this.http.get<Vente[]>(`${this.ventesUrl}/all`)
+
+
+  getAllVentes(): Observable<Vente[]> {
+    return this.http.get<Vente[]>(this.apiUrl)
       .pipe(
         tap(data => console.log('Historique des ventes chargé:', data.length)),
         catchError(this.handleError)
       );
   }
-  
-  /**
-   * Récupère une vente spécifique par ID
-   */
+
   getVenteById(id: number): Observable<Vente> {
-    return this.http.get<Vente>(`${this.ventesUrl}/${id}`)
+    return this.http.get<Vente>(`${this.apiUrl}/${id}`)
       .pipe(
         tap(data => console.log('Vente chargée:', data)),
         catchError(this.handleError)
       );
   }
-  
-  /**
-   * Gestion des erreurs HTTP
-   */
-  private handleError(error: HttpErrorResponse) {
-    let errorMessage = 'Une erreur est survenue';
-    
+
+  private handleErrorExtended(error: HttpErrorResponse): Observable<never | string> {
+    let errorMessage = 'Une erreur inconnue est survenue!';
     if (error.error instanceof ErrorEvent) {
       // Erreur côté client
       errorMessage = `Erreur: ${error.error.message}`;
     } else {
       // Erreur côté serveur
-      errorMessage = `Code d'erreur: ${error.status}, ` +
-                      `Message: ${error.message}`;
+      if (error.status === 400 && typeof error.error === 'string') {
+        // Cas où le backend renvoie directement le message d'erreur pour les bad requests
+        return throwError(() => error.error);
+      }
+      errorMessage = `Code d'erreur ${error.status}: ${error.message || error.statusText}`;
+      if (error.error && typeof error.error === 'string' && error.status !== 400) {
+        errorMessage = error.error;
+      } else if (error.error && error.error.message) {
+        errorMessage = error.error.message;
+      }
     }
-    
+    console.error(errorMessage);
+    return throwError(() => errorMessage); // Retourne le message d'erreur
+  }
+
+  private handleError(error: HttpErrorResponse) {
+    // ... (votre gestionnaire d'erreur actuel peut être conservé ici s'il ne gère pas le retour de string)
+    // Pour simplifier, j'utilise le même que handleErrorExtended mais qui ne retourne que 'never'
+    let errorMessage = 'Une erreur inconnue est survenue!';
+    if (error.error instanceof ErrorEvent) {
+      errorMessage = `Erreur: ${error.error.message}`;
+    } else {
+      errorMessage = `Code d'erreur ${error.status}: ${error.message || error.statusText}`;
+       if (error.error && typeof error.error === 'string') {
+        errorMessage = error.error;
+      } else if (error.error && error.error.message) {
+        errorMessage = error.error.message;
+      }
+    }
     console.error(errorMessage);
     return throwError(() => new Error(errorMessage));
   }

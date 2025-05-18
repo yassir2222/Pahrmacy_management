@@ -286,17 +286,22 @@ export class RapportComponent implements OnInit {
 
     this.ventes.forEach((vente) => {
       vente.lignesVente.forEach((ligne) => {
-        if (ventesParProduit.has(ligne.produitId)) {
-          const produit = ventesParProduit.get(ligne.produitId)!;
-          produit.quantite += ligne.quantite;
+        // Vérifier si ligne.produit et ligne.produit.id existent avant de les utiliser
+        if (ligne.produit && typeof ligne.produit.id === 'number') {
+          const produitId = ligne.produit.id; // Utiliser l'ID de l'objet produit
+          if (ventesParProduit.has(produitId)) {
+            const produitData = ventesParProduit.get(produitId)!;
+            produitData.quantite += ligne.quantite;
+          } else {
+            // Le nom du produit est déjà dans ligne.produit.nomMedicament
+            ventesParProduit.set(produitId, {
+              id: produitId,
+              nom: ligne.produit.nomMedicament || `Produit #${produitId}`,
+              quantite: ligne.quantite,
+            });
+          }
         } else {
-          // Trouver le nom du produit
-          const produit = this.produits.find((p) => p.id === ligne.produitId);
-          ventesParProduit.set(ligne.produitId, {
-            id: ligne.produitId,
-            nom: produit?.nomMedicament || `Produit #${ligne.produitId}`,
-            quantite: ligne.quantite,
-          });
+          console.warn("Ligne de vente avec produit ou ID de produit manquant:", ligne);
         }
       });
     });

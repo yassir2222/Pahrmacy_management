@@ -48,6 +48,7 @@ public class Produit {
     @Column(nullable = false)
     private int quantiteTotaleEnStock;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "produit", fetch = FetchType.LAZY)
     private List<LigneVente> ligneVentes= new ArrayList<>();
 

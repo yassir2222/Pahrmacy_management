@@ -1,10 +1,10 @@
 import { LigneVente } from './LigneVente';
+import { User } from './User';
 
 export interface Vente {
-  id?: number; // Optionnel, l'ID sera attribué par le backend
-  utilisateurId: number; // Ou userId, ajustez selon votre modèle User/Utilisateur
-  dateVente: string | Date; // Date de la vente
-  lignesVente: LigneVente[]; // Tableau des lignes de vente
-  montantTotal: number; // Montant total calculé
-  // Ajoutez d'autres champs si nécessaire (ex: client, modePaiement)
+  id: number; // L'ID sera fourni par le backend
+  dateVente: string; // ou Date, le backend renvoie LocalDateTime
+  montantTotal: number;
+  utilisateur?: User; // Le backend renvoie l'objet User
+  lignesVente: LigneVente[];
 }

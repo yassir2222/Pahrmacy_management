@@ -1,4 +1,6 @@
 package emsi.project.backendms1.models;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*; // Ou javax.persistence.*
 
 import lombok.Data;
@@ -20,10 +22,12 @@ public class LigneVente {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "vente_id", nullable = false)
+    @JsonBackReference("vente-lignes")
     private Vente vente;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "produit_id", nullable = false)
+    @JsonIgnore
     private Produit produit;
 
     @Column(nullable = false)

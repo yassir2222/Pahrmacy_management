@@ -19,4 +19,7 @@ public interface LotDeStockRepo extends JpaRepository<LotDeStock,Long> {
     Optional<LotDeStock> findByProduitIdAndNumeroLot(Long produitId, String numeroLot);
     List<LotDeStock> findByProduitId(Long produitId);
 
+    List<LotDeStock> findByProduitIdOrderByDateExpirationAsc(Long produitId);
+
+
 }

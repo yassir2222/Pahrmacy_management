@@ -1,34 +1,46 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import {
-  ReactiveFormsModule,
-  FormBuilder,
-  FormGroup,
-  FormArray,
-  Validators,
-  AbstractControl,
-} from '@angular/forms';
-import { Observable, Subject, of, Subscription } from 'rxjs';
-import { catchError, takeUntil, tap, debounceTime } from 'rxjs/operators';
-import { MessageService } from 'primeng/api';
+// ... existing imports ...
+import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
+import { Component, Inject, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators ,FormsModule} from '@angular/forms';
+import { ConfirmationService, MessageService } from 'primeng/api';
+import { Observable, of, throwError, forkJoin } from 'rxjs';
+import { catchError, delay, tap } from 'rxjs/operators';
 
-// PrimeNG Modules
-import { ToastModule } from 'primeng/toast';
+// PrimeNG Modules (déjà présents dans vos imports standalone)
+import { PanelModule } from 'primeng/panel';
 import { DropdownModule } from 'primeng/dropdown';
-import { CalendarModule } from 'primeng/calendar';
+import { CardModule } from 'primeng/card';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
+import { DialogModule } from 'primeng/dialog';
+import { InputTextModule } from 'primeng/inputtext';
+import { CalendarModule } from 'primeng/calendar';
 import { InputNumberModule } from 'primeng/inputnumber';
+import { BadgeModule } from 'primeng/badge';
+import { TooltipModule } from 'primeng/tooltip';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
-import { CardModule } from 'primeng/card'; // Pour l'encadrement
-import { DividerModule } from 'primeng/divider'; // Pour séparer visuellement
+import { ToastModule } from 'primeng/toast';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 
-// Services and Models
-import { VenteService } from '../../service/vente.service';
+// Importez vos vrais modèles et services
 import { Produit } from '../../models/Produit';
-import { User } from '../../models/User'; // Ou Utilisateur
+import { LotDeStock } from '../../models/LotDeStock'; // Assurez-vous que ce modèle existe dans app/models
 import { Vente } from '../../models/Vente';
-import { LigneVente } from '../../models/LigneVente';
+import { LigneVenteRequest } from '../../models/LigneVenteRequest';
+import { VenteRequest } from '../../models/VenteRequest';
+import { User } from '../../models/User';
+
+import { VenteService } from '../../service/vente.service'; // VRAI SERVICE
+import { map } from 'leaflet';
+import { HttpHeaders } from '@angular/common/http';
+// import { ProductService } from '../../services/product.service'; // Si vous avez un service produit séparé
+// import { LotService } from '../../services/lot.service'; // Si vous avez un service lot séparé
+// import { AuthService } from '../../services/auth.service'; // Pour l'ID utilisateur
+
+// Interface pour le panier
+interface ProduitPanier extends Produit {
+  quantiteAVendre: number;
+}
 
 @Component({
   selector: 'app-vente',
@@ -37,265 +49,507 @@ import { LigneVente } from '../../models/LigneVente';
     CommonModule,
     ReactiveFormsModule,
     ToastModule,
+    ConfirmDialogModule,
+    PanelModule,
     DropdownModule,
-    CalendarModule,
+    CardModule,
     TableModule,
     ButtonModule,
+    DialogModule,
+    InputTextModule,
+    CalendarModule,
     InputNumberModule,
-    ProgressSpinnerModule,
-    CardModule,
-    DividerModule,
+    BadgeModule,
+    TooltipModule,
+    FormsModule,
+    ProgressSpinnerModule
+    // ... autres modules PrimeNG que vous utilisez
   ],
   templateUrl: './vente.component.html',
-  providers: [MessageService],
+  styleUrls: ['./vente.component.css'],
+  providers: [
+    MessageService,
+    ConfirmationService,
+    DatePipe,
+    CurrencyPipe,
+    // Les services avec providedIn: 'root' n'ont pas besoin d'être listés ici
+    // Si vos services ne sont pas 'providedIn: "root"', ajoutez-les ici.
+    // Ex: ProductService, LotService, AuthService
+  ]
 })
-export class VenteComponent implements OnInit, OnDestroy {
-  venteForm!: FormGroup;
-  produits: Produit[] = [];
-  utilisateurs: User[] = []; // Ou Utilisateur[]
-  montantTotal: number = 0;
+export class VenteComponent implements OnInit {
+  // --- Propriétés pour la gestion des lots (existantes) ---
+  produitsListPourLots: Produit[] = []; // Renommé pour clarté
+  selectedProduitDetailsPourLots: Produit | null = null; // Renommé
+  lotsList: LotDeStock[] = [];
+  produitSelectionForm!: FormGroup; // Pour la sélection de produit pour voir les lots
+  lotForm!: FormGroup;
+  isLoadingProduitsPourLots: boolean = false; // Renommé
+  isLoadingSelectedProduitDetails: boolean = false;
+  isLoadingLots: boolean = false;
+  isSavingLot: boolean = false;
+  lotDialogVisible: boolean = false;
+  isLotEditMode: boolean = false;
+  submittedLot: boolean = false;
+  currentEditingLotId: number | null = null;
 
-  isLoadingProduits: boolean = false;
-  isLoadingUtilisateurs: boolean = false;
-  isSaving: boolean = false;
+  // --- Propriétés pour la Nouvelle Vente ---
+  produitsDisponiblesPourVente: Produit[] = [];
+  panier: ProduitPanier[] = [];
+  selectedProduitIdPourPanier?: number;
+  quantitePourProduitPanier: number = 1;
+  currentUserId: number = 1; // TODO: À remplacer par l'ID de l'utilisateur connecté (via AuthService)
+  isLoadingVente: boolean = false;
 
-  private destroy$ = new Subject<void>();
-  private lignesVenteSub: Subscription | null = null;
+  // --- Propriétés pour l'Historique des Ventes ---
+  historiqueVentes: Vente[] = [];
+  isLoadingHistorique: boolean = false;
 
+  selectedVenteForDetails: Vente | null = null; // To store the sale whose details are being viewed
+  venteDetailsDialogVisible: boolean = false; //
+  venteToEdit: Vente | null = null;
+  editVenteDialogVisible: boolean = false;
+  isSubmittingEditVente: boolean = false;
+  // Injectez les vrais services. VenteService est déjà providedIn: 'root'
+  // Si ProductService et LotService ne sont pas providedIn: 'root', injectez-les ici.
+  // Pour l'instant, on va supposer que VenteService peut charger les produits pour la vente.
+  // Et que la gestion des lots utilise un LotService (ou des appels directs si pas de service dédié).
   constructor(
     private fb: FormBuilder,
-    private venteService: VenteService,
-    private messageService: MessageService
+    private messageService: MessageService,
+    private confirmationService: ConfirmationService,
+    private venteService: VenteService, // VRAI SERVICE
+    // private productService: ProductService, // Si séparé
+    // @Inject('LotService') private lotService: ILotService, // Si vous gardez l'injection par token pour un LotService réel
+    // private authService: AuthService // Pour l'ID utilisateur
   ) {}
 
   ngOnInit(): void {
-    this.initForm();
-    this.loadInitialData();
-    this.listenToLignesChanges();
-  }
-
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
-    this.lignesVenteSub?.unsubscribe();
-  }
-
-  // --- Initialisation ---
-
-  initForm(): void {
-    this.venteForm = this.fb.group({
-      utilisateurId: [null, Validators.required],
-      dateVente: [new Date(), Validators.required], // Date actuelle par défaut
-      lignes: this.fb.array([this.createLigneVenteGroup()]), // Commence avec une ligne
+    // Initialisation pour la gestion des lots (existante)
+    this.produitSelectionForm = this.fb.group({
+      produitId: [null, Validators.required]
     });
-  }
-
-  createLigneVenteGroup(): FormGroup {
-    return this.fb.group({
-      produitId: [null, Validators.required],
-      quantite: [1, [Validators.required, Validators.min(1)]],
-      prixUnitaire: [{ value: 0, disabled: true }], // Calculé et désactivé
-      prixTotalLigne: [{ value: 0, disabled: true }], // Calculé et désactivé
+    this.lotForm = this.fb.group({
+      numeroLot: ['', Validators.required],
+      dateExpiration: [null, Validators.required],
+      quantite: [null, [Validators.required, Validators.min(1)]],
+      prixAchatHT: [null, [Validators.required, Validators.min(0.01)]],
+      dateReception: [null]
     });
+    this.loadProduitsPourGestionLots(); // Charger les produits pour le dropdown de gestion des lots
+
+    // Initialisation pour la nouvelle vente
+    this.loadProduitsDisponiblesPourVente();
+    // this.currentUserId = this.authService.getCurrentUser()?.id; // Exemple avec AuthService
+
+    // Initialisation pour l'historique des ventes
+    this.loadHistoriqueVentes();
   }
 
-  loadInitialData(): void {
-    this.isLoadingProduits = true;
-    this.isLoadingUtilisateurs = true;
-
-    this.venteService
-      .getProduits()
-      .pipe(
-        takeUntil(this.destroy$),
-        catchError((err) => {
-          console.error('Erreur chargement produits:', err);
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Erreur',
-            detail: 'Impossible de charger les produits.'
-          });
-          this.isLoadingProduits = false;
-          return of([]);
-        })
-      )
-      .subscribe((data) => {
-        this.produits = data;
-        this.isLoadingProduits = false;
-      });
-
-    this.venteService
-      .getVendeurs()
-      .pipe(
-        takeUntil(this.destroy$),
-        catchError((err) => {
-          console.error('Erreur chargement vendeurs:', err);
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Erreur',
-            detail: 'Impossible de charger les vendeurs.'
-          });
-          this.isLoadingUtilisateurs = false;
-          return of([]);
-        })
-      )
-      .subscribe((data) => {
-        console.log('Vendeurs reçus:', JSON.stringify(data));
-        this.utilisateurs = data;
-        if (data.length === 0) {
-          this.messageService.add({
-            severity: 'warn',
-            summary: 'Attention',
-            detail: 'Aucun vendeur disponible. Veuillez créer des comptes vendeurs.'
-          });
-        } else {
-          console.log('Vendeurs disponibles:', data.map(u => `${u.username} (${u.role || 'sans rôle'})`).join(', '));
-        }
-        this.isLoadingUtilisateurs = false;
-      });
-  }
-
-  // --- Gestion des Lignes de Vente ---
-
-  get lignes(): FormArray {
-    return this.venteForm.get('lignes') as FormArray;
-  }
-
-  addLigneVente(): void {
-    this.lignes.push(this.createLigneVenteGroup());
-  }
-
-  removeLigneVente(index: number): void {
-    if (this.lignes.length > 1) {
-      // Empêche de supprimer la dernière ligne
-      this.lignes.removeAt(index);
-    } else {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Attention',
-        detail: 'Au moins une ligne est requise.',
-      });
-    }
-  }
-
-  onProductChange(index: number): void {
-    const ligneGroup = this.lignes.at(index) as FormGroup;
-    const produitId = ligneGroup.get('produitId')?.value;
-    const selectedProduit = this.produits.find((p) => p.id === produitId);
-
-    if (selectedProduit && selectedProduit.prixVenteTTC !== undefined) {
-      ligneGroup.get('prixUnitaire')?.setValue(selectedProduit.prixVenteTTC);
-      
-      // Check stock availability
-      if (selectedProduit.quantiteTotaleEnStock !== undefined && 
-          selectedProduit.quantiteTotaleEnStock <= 0) {
-        this.messageService.add({
-          severity: 'warn',
-          summary: 'Attention',
-          detail: 'Produit en rupture de stock!',
-        });
+  // --- Méthodes pour la Nouvelle Vente ---
+  loadProduitsDisponiblesPourVente(): void {
+    this.isLoadingVente = true;
+    // Utilisez votre vrai service produit ici si vous en avez un
+    this.venteService.getProduitsDisponiblesPourVente().subscribe({
+      next: (data) => {
+        this.produitsDisponiblesPourVente = data;
+        this.isLoadingVente = false;
+      },
+      error: (err) => {
+        this.messageService.add({ severity: 'error', summary: 'Erreur', detail: 'Impossible de charger les produits pour la vente.' });
+        console.error(err);
+        this.isLoadingVente = false;
       }
-    } else {
-      ligneGroup.get('prixUnitaire')?.setValue(0);
+    });
+  }
+
+  ajouterAuPanier(): void {
+
+    if (!this.selectedProduitIdPourPanier || this.quantitePourProduitPanier <= 0) {
+      this.messageService.add({ severity: 'warn', summary: 'Attention', detail: 'Veuillez sélectionner un produit et une quantité valide.' });
+      return;
     }
-    this.calculerPrixTotalLigne(index);
+    const produitSource = this.produitsDisponiblesPourVente.find(p => p.id === this.selectedProduitIdPourPanier);
+    if (!produitSource) {
+      this.messageService.add({ severity: 'error', summary: 'Erreur', detail: 'Produit non trouvé.' });
+      return;
+    }
+    if (produitSource.quantiteTotaleEnStock === undefined || produitSource.quantiteTotaleEnStock === null || produitSource.quantiteTotaleEnStock < this.quantitePourProduitPanier) {
+      this.messageService.add({ severity: 'warn', summary: 'Stock insuffisant', detail: `Stock disponible pour ${produitSource.nomMedicament}: ${produitSource.quantiteTotaleEnStock || 0}` });
+      return;
+    }
+    if (produitSource.prixVenteTTC === null || produitSource.prixVenteTTC === undefined) {
+        this.messageService.add({ severity: 'error', summary: 'Erreur', detail: `Prix de vente non défini pour ${produitSource.nomMedicament}.` });
+        return;
+    }
+
+    const itemExistant = this.panier.find(item => item.id === this.selectedProduitIdPourPanier);
+    if (itemExistant) {
+      // Vérifier si l'ajout dépasse le stock total
+      if (produitSource.quantiteTotaleEnStock < (itemExistant.quantiteAVendre + this.quantitePourProduitPanier) ) {
+        this.messageService.add({ severity: 'warn', summary: 'Stock insuffisant', detail: `Quantité demandée (${itemExistant.quantiteAVendre + this.quantitePourProduitPanier}) dépasse le stock (${produitSource.quantiteTotaleEnStock}) pour ${produitSource.nomMedicament}.` });
+        return;
+      }
+      itemExistant.quantiteAVendre += this.quantitePourProduitPanier;
+    } else {
+      this.panier.push({ ...produitSource, quantiteAVendre: this.quantitePourProduitPanier });
+    }
+    this.selectedProduitIdPourPanier = undefined;
+    this.quantitePourProduitPanier = 1;
   }
 
-  onQuantityChange(index: number): void {
-    this.calculerPrixTotalLigne(index);
+  retirerDuPanier(produitId: number): void {
+    this.panier = this.panier.filter(item => item.id !== produitId);
   }
 
-  calculerPrixTotalLigne(index: number): void {
-    const ligneGroup = this.lignes.at(index) as FormGroup;
-    const quantite = ligneGroup.get('quantite')?.value || 0;
-    const prixUnitaire = ligneGroup.get('prixUnitaire')?.value || 0;
-    const prixTotal = quantite * prixUnitaire;
-    ligneGroup.get('prixTotalLigne')?.setValue(prixTotal);
-    // Note: Pas besoin d'appeler calculerMontantTotal ici, car listenToLignesChanges le fait
-  }
-
-  // --- Calcul Montant Total ---
-
-  listenToLignesChanges(): void {
-    this.lignesVenteSub = this.lignes.valueChanges
-      .pipe(
-        debounceTime(100) // Évite les calculs trop fréquents
-      )
-      .subscribe(() => {
-        this.calculerMontantTotal();
-      });
-    // Calcul initial
-    this.calculerMontantTotal();
-  }
-
-  calculerMontantTotal(): void {
-    this.montantTotal = this.lignes.controls.reduce((total, control) => {
-      const group = control as FormGroup;
-      // Utiliser getRawValue pour obtenir la valeur même si désactivé
-      const prixLigne = group.getRawValue().prixTotalLigne || 0;
-      return total + prixLigne;
+  calculerTotalPanier(): number {
+    return this.panier.reduce((total, item) => {
+        const prix = item.prixVenteTTC !== null && item.prixVenteTTC !== undefined ? item.prixVenteTTC : 0;
+        return total + (prix * item.quantiteAVendre);
     }, 0);
   }
 
-  // --- Validation et Sauvegarde ---
-
-  validerVente(): void {
-    if (this.venteForm.invalid) {
-      this.venteForm.markAllAsTouched(); // Marquer pour erreurs
-      this.lignes.controls.forEach((control) =>
-        (control as FormGroup).markAllAsTouched()
-      );
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Erreur de validation',
-        detail: 'Veuillez corriger les erreurs dans le formulaire.',
-      });
+  finaliserVente(): void {
+    if (this.panier.length === 0) {
+      this.messageService.add({ severity: 'warn', summary: 'Panier vide', detail: 'Ajoutez des produits avant de finaliser.' });
+      return;
+    }
+    if (!this.currentUserId) {
+      this.messageService.add({ severity: 'error', summary: 'Erreur', detail: 'Utilisateur non identifié pour la vente.' });
       return;
     }
 
-    this.isSaving = true;
-    const formValue = this.venteForm.getRawValue(); // Important pour obtenir les valeurs désactivées
+    const lignesVente: LigneVenteRequest[] = this.panier.map(item => {
+        if (item.prixVenteTTC === null || item.prixVenteTTC === undefined) {
+            throw new Error(`Prix de vente non défini pour le produit ID ${item.id} dans le panier.`);
+        }
+        if (item.id === undefined) {
+            throw new Error(`ID de produit non défini dans le panier.`);
+        }
+        return {
+            produitId: item.id,
+            quantite: item.quantiteAVendre,
+            prixUnitaireVenteTTC: item.prixVenteTTC
+        };
+    });
 
-    const venteData: Vente = {
-      utilisateurId: formValue.utilisateurId,
-      dateVente: formValue.dateVente,
-      lignesVente: formValue.lignes.map((ligne: any) => ({
-        produitId: ligne.produitId,
-        quantite: ligne.quantite,
-        prixUnitaire: ligne.prixUnitaire,
-        prixTotalLigne: ligne.prixTotalLigne,
-      })),
-      montantTotal: this.montantTotal, // Utiliser la propriété calculée
+    const venteRequest: VenteRequest = {
+      userId: this.currentUserId,
+      lignesVente: lignesVente
     };
 
-    this.venteService
-      .ajouterVente(venteData)
-      .pipe(
-        takeUntil(this.destroy$),
-        catchError((err) => {
-          console.error('Erreur enregistrement vente:', err);
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Échec',
-            detail: "Erreur lors de l'enregistrement de la vente.",
-          });
-          this.isSaving = false;
-          return of(null); // Gérer l'erreur
-        })
-      )
-      .subscribe((response) => {
-        if (response) {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Succès',
-            detail: 'Vente enregistrée avec succès!',
-          });
-          this.venteForm.reset();
-          this.lignes.clear(); // Vider les lignes
-          this.addLigneVente(); // Ajouter une ligne vide
-          this.venteForm.patchValue({ dateVente: new Date() }); // Remettre la date
-          this.montantTotal = 0;
+    this.isLoadingVente = true;
+    this.venteService.creerVente(venteRequest).subscribe({
+      next: (nouvelleVenteOuMessage) => {
+        if (typeof nouvelleVenteOuMessage === 'string') { // Gestion d'un message d'erreur du backend
+            this.messageService.add({ severity: 'error', summary: 'Erreur Vente', detail: nouvelleVenteOuMessage });
+        } else {
+            this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Vente enregistrée avec succès!' });
+            console.log('Vente enregistrée:', nouvelleVenteOuMessage);
+            this.panier = [];
+            this.loadProduitsDisponiblesPourVente(); // Rafraîchir les stocks
+            this.loadHistoriqueVentes(); // Rafraîchir l'historique
         }
-        this.isSaving = false;
-      });
+        this.isLoadingVente = false;
+      },
+      error: (errorMessage) => { // Géré par handleErrorExtended qui peut retourner une string
+        this.messageService.add({ severity: 'error', summary: 'Erreur Vente', detail: errorMessage });
+        console.error('Erreur lors de la création de la vente:', errorMessage);
+        this.isLoadingVente = false;
+      }
+    });
+
+  }
+
+   hideEditVenteDialog(): void {
+    this.editVenteDialogVisible = false;
+    this.venteToEdit = null;
+    this.isSubmittingEditVente = false;
+  }
+
+  confirmDeleteVente(vente: Vente): void {
+    this.confirmationService.confirm({
+      message: `Êtes-vous sûr de vouloir supprimer la vente N°${vente.id} du ${new Date(vente.dateVente).toLocaleDateString()} ? Cette action peut affecter les stocks.`,
+      header: 'Confirmation de suppression',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Oui, supprimer',
+      rejectLabel: 'Annuler',
+      accept: () => {
+        this.deleteVente(vente.id); 
+      },
+      reject: () => {
+        this.messageService.add({ severity: 'info', summary: 'Annulé', detail: 'Suppression de la vente annulée.' });
+      }
+    });
+  }
+
+  openEditVenteDialog(vente: Vente): void {
+    this.venteToEdit = JSON.parse(JSON.stringify(vente)); // Create a deep copy
+    this.editVenteDialogVisible = true; // Make sure to set this to true
+    // Logique pour pré-remplir le formulaire d'édition si nécessaire
+    console.log("Opening edit dialog for sale:", this.venteToEdit);
+    // this.messageService.add({severity: 'info', summary: 'Fonctionnalité en développement', detail: 'L\'édition de vente est complexe.'});
+  }
+
+  saveEditedVente(): void {
+    if (!this.venteToEdit) return;
+    this.isSubmittingEditVente = true;
+    // Placeholder: La logique de construction de VenteRequest et l'appel au service iront ici
+    // const venteRequest: VenteRequest = {
+    //   userId: this.venteToEdit.utilisateur?.id, // ou une autre source pour userId
+    //   lignesVente: this.venteToEdit.lignesVente.map(lv => ({
+    //     produitId: lv.produit.id, // Assurez-vous que lv.produit.id est disponible
+    //     quantite: lv.quantite,
+    //     prixUnitaireVenteTTC: lv.prixVenteTTC
+    //   }))
+    // };
+
+    this.messageService.add({severity: 'warn', summary: 'Non implémenté', detail: 'La sauvegarde de la vente modifiée nécessite un endpoint backend.'});
+    console.log("Sauvegarder la vente modifiée (nécessite backend):", this.venteToEdit);
+    // this.venteService.updateVente(this.venteToEdit.id, venteRequest).subscribe({ ... });
+    this.isSubmittingEditVente = false;
+    this.hideEditVenteDialog();
+  }
+
+  // --- Méthodes pour l'Historique des Ventes ---
+ 
+
+  // --- Méthodes pour la gestion des lots (existantes, à adapter avec vrais services si nécessaire) ---
+  loadProduitsPourGestionLots(): void { // Renommé
+    this.isLoadingProduitsPourLots = true;
+    // Remplacez this.produitServiceMock.getProduits() par votre vrai service
+    // Exemple: this.productService.getProducts() ou this.venteService.getProduitsDisponiblesPourVente()
+    // Pour l'instant, je vais simuler un appel qui pourrait venir de VenteService ou un ProductService
+     this.venteService.getProduitsDisponiblesPourVente().pipe( // ou un appel à un ProductService dédié
+      catchError(err => {
+        this.messageService.add({ severity: 'error', summary: 'Erreur', detail: 'Impossible de charger les produits pour la gestion des lots.' });
+        console.error(err);
+        return of([]);
+      }),
+      tap(() => this.isLoadingProduitsPourLots = false)
+    ).subscribe(data => {
+      this.produitsListPourLots = data;
+    });
+  }
+
+  onProduitSelectedPourLots(produitId: number | null): void { // Renommé
+    this.selectedProduitDetailsPourLots = null;
+    this.lotsList = [];
+
+    if (produitId) {
+      this.isLoadingSelectedProduitDetails = true;
+      this.isLoadingLots = true; // Aussi pour les lots
+
+      // Simulez l'appel à getProduitById et getLotsByProduitId avec vos vrais services
+      // Exemple:
+      // const produitDetails$ = this.productService.getProductById(produitId);
+      // const lotsDetails$ = this.lotService.getLotsByProductId(produitId);
+      // forkJoin({ details: produitDetails$, lots: lotsDetails$ }).subscribe(...)
+
+      // Pour l'instant, simulation simple (le backend ne fournit pas ces endpoints séparément dans VenteController)
+      // Vous aurez besoin d'un ProductService et LotService pour cela.
+      // Je vais juste trouver le produit dans la liste chargée.
+      const foundProduit = this.produitsListPourLots.find(p => p.id === produitId);
+      if (foundProduit) {
+          this.selectedProduitDetailsPourLots = foundProduit;
+          // Ici, vous appelleriez lotService.getLotsByProduitId(produitId)
+          // this.lotService.getLotsByProduitId(produitId).subscribe(lots => this.lotsList = lots);
+          this.messageService.add({severity: 'info', summary: 'Info', detail: 'La récupération des lots nécessite un LotService fonctionnel.'});
+          this.lotsList = []; // Vider en attendant un vrai service
+      } else {
+          this.messageService.add({ severity: 'warn', summary: 'Attention', detail: 'Détails du produit non trouvés.' });
+      }
+      this.isLoadingSelectedProduitDetails = false;
+      this.isLoadingLots = false;
+    }
+  }
+
+  openNewLotDialog(): void {
+    if (!this.produitSelectionForm.value.produitId) {
+      this.messageService.add({ severity: 'warn', summary: 'Attention', detail: 'Veuillez d\'abord sélectionner un produit.' });
+      return;
+    }
+    this.isLotEditMode = false;
+    this.submittedLot = false;
+    this.currentEditingLotId = null;
+    this.lotForm.reset();
+    if (this.selectedProduitDetailsPourLots && this.selectedProduitDetailsPourLots.prixAchatHT) {
+        this.lotForm.patchValue({ prixAchatHT: this.selectedProduitDetailsPourLots.prixAchatHT });
+    }
+    this.lotDialogVisible = true;
+  }
+
+  openEditLotDialog(lot: LotDeStock): void {
+    this.isLotEditMode = true;
+    this.submittedLot = false;
+    this.currentEditingLotId = lot.id;
+    this.lotForm.patchValue({
+      ...lot,
+      dateExpiration: lot.dateExpiration ? new Date(lot.dateExpiration) : null,
+      dateReception: lot.dateReception ? new Date(lot.dateReception) : null
+    });
+    this.lotDialogVisible = true;
+  }
+
+  hideLotDialog(): void {
+    this.lotDialogVisible = false;
+    this.submittedLot = false;
+    this.currentEditingLotId = null;
+  }
+
+  saveLot(): void {
+    this.submittedLot = true;
+    if (this.lotForm.invalid) {
+      this.messageService.add({ severity: 'warn', summary: 'Validation', detail: 'Veuillez corriger les erreurs du formulaire.' });
+      return;
+    }
+    if (!this.selectedProduitDetailsPourLots && !this.isLotEditMode) { // Correction: utiliser selectedProduitDetailsPourLots
+        this.messageService.add({ severity: 'error', summary: 'Erreur', detail: 'Aucun produit sélectionné pour associer le lot.' });
+        return;
+    }
+
+    this.isSavingLot = true;
+    const lotDataFromForm = { ...this.lotForm.value };
+    const produitIdPourLot = this.selectedProduitDetailsPourLots!.id; // Assurer que selectedProduitDetailsPourLots est non null
+
+    let saveObservable: Observable<LotDeStock>; // Le type Lot est un exemple, adaptez à ce que votre LotService renvoie
+
+    // Remplacez par les appels à votre vrai LotService
+    // if (this.isLotEditMode && this.currentEditingLotId) {
+    //   saveObservable = this.lotService.updateLot({ ...lotDataFromForm, id: this.currentEditingLotId, produitId: produitIdPourLot });
+    // } else {
+    //   saveObservable = this.lotService.addLot({ ...lotDataFromForm, produitId: produitIdPourLot });
+    // }
+    this.messageService.add({severity: 'info', summary: 'Info', detail: 'La sauvegarde des lots nécessite un LotService fonctionnel.'});
+    this.isSavingLot = false;
+    this.hideLotDialog();
+    // saveObservable.pipe(
+    //   catchError(err => { /* ... */ })
+    // ).subscribe(() => { /* ... */ });
+  }
+
+  confirmDeleteLot(lot: LotDeStock): void {
+    this.confirmationService.confirm({
+      key: 'deleteLotConfirmation', // Assurez-vous que p-confirmDialog a cette clé
+      message: `Êtes-vous sûr de vouloir supprimer le lot N°${lot.numeroLot} ?`,
+      header: 'Confirmation de suppression',
+      icon: 'pi pi-exclamation-triangle',
+      accept: () => {
+        this.deleteLot(lot.id);
+      },
+      reject: () => {
+        this.messageService.add({ severity: 'info', summary: 'Annulé', detail: 'Suppression du lot annulée.' });
+      }
+    });
+  }
+
+  deleteLot(lotId: number): void {
+    this.isLoadingLots = true;
+    // Remplacez par l'appel à votre vrai LotService
+    // this.lotService.deleteLot(lotId).pipe(catchError(err => { /* ... */ })).subscribe(() => { /* ... */ });
+    this.messageService.add({severity: 'info', summary: 'Info', detail: 'La suppression des lots nécessite un LotService fonctionnel.'});
+    this.isLoadingLots = false;
+    if (this.selectedProduitDetailsPourLots && this.selectedProduitDetailsPourLots.id !== undefined) {
+        this.onProduitSelectedPourLots(this.selectedProduitDetailsPourLots.id);
+    }
+  }
+
+  getBadgeValue(lot: LotDeStock): string {
+    const expirationDate = new Date(lot.dateExpiration);
+    const today = new Date();
+    const threeMonthsFromNow = new Date();
+    threeMonthsFromNow.setMonth(today.getMonth() + 3);
+
+    if (lot.quantite <= 0) return 'Épuisé';
+    if (expirationDate < today) return 'Expiré';
+    if (expirationDate < threeMonthsFromNow) return 'Expire Bientôt';
+    return 'En Stock';
+  }
+
+  getBadgeSeverity(lot: LotDeStock): string {
+    const expirationDate = new Date(lot.dateExpiration);
+    const today = new Date();
+    const threeMonthsFromNow = new Date();
+    threeMonthsFromNow.setMonth(today.getMonth() + 3);
+
+    if (lot.quantite <= 0 || expirationDate < today) return 'danger';
+    if (expirationDate < threeMonthsFromNow) return 'warning';
+    return 'success';
+  }
+
+  // Helper pour l'image du produit dans la section gestion des lots
+  get selectedProduitPourImageLots(): Produit | null {
+    const selectedId = this.produitSelectionForm.get('produitId')?.value;
+    if (selectedId) {
+      return this.produitsListPourLots.find(p => p.id === selectedId) || null;
+    }
+    return null;
+  }
+
+
+   loadHistoriqueVentes(): void {
+    this.isLoadingHistorique = true;
+    this.venteService.getAllVentes().subscribe({
+      next: (data) => {
+        this.historiqueVentes = data;
+        this.isLoadingHistorique = false;
+      },
+      error: (err) => {
+        this.messageService.add({ severity: 'error', summary: 'Erreur', detail: 'Impossible de charger l\'historique des ventes.' });
+        console.error(err);
+        this.isLoadingHistorique = false;
+      }
+    });
+  }
+
+  // Add this method
+  showVenteDetails(vente: Vente): void {
+    this.selectedVenteForDetails = vente;
+    this.venteDetailsDialogVisible = true;
+  }
+
+  hideVenteDetailsDialog(): void {
+    this.venteDetailsDialogVisible = false;
+    this.selectedVenteForDetails = null;
+  }
+
+
+  /**
+   * Met à jour une vente existante.
+   * @param id L'ID de la vente à mettre à jour.
+   * @param venteRequest Les nouvelles données de la vente.
+   * @returns Observable<Vente | string>
+   * @remarks Nécessite un endpoint PUT /api/ventes/{id} sur le backend.
+   */
+  updateVente(id: number, venteRequest: VenteRequest): Observable<Vente | string> {
+    const httpOptions = {
+      headers: new HttpHeaders({ 'Content-Type': 'application/json' })
+    };
+    console.warn(`[VenteService] updateVente appelé. Backend endpoint PUT  requis.`);
+    // Décommentez et adaptez lorsque le backend est prêt
+    // return this.http.put<Vente>(`${this.apiUrl}/${id}`, venteRequest, httpOptions)
+    //   .pipe(
+    //     tap(data => console.log('Vente mise à jour:', data)),
+    //     catchError(this.handleErrorExtended)
+    //   );
+    return of(`Simulation: Vente ${id} mise à jour (backend non implémenté)`).pipe(delay(500)); // Simulation
+  }
+
+  /**
+   * Supprime une vente.
+   * @param id L'ID de la vente à supprimer.
+   * @returns Observable<void | string>
+   * @remarks Nécessite un endpoint DELETE /api/ventes/{id} sur le backend.
+   *          La logique de remise en stock des produits doit être gérée côté backend.
+   */
+  deleteVente(id: number): Observable<void | string> {
+    console.warn(`[VenteService] deleteVente appelé. Backend endpoint DELETEs.`);
+    // Décommentez et adaptez lorsque le backend est prêt
+    // return this.http.delete<void>(`${this.apiUrl}/${id}`)
+    //   .pipe(
+    //     tap(() => console.log(`Vente ${id} supprimée`)),
+    //     catchError(this.handleErrorExtended)
+    //   );
+    return of(`Simulation: Vente ${id} suppretion (backend non implémenté)`).pipe(delay(500)); // Simulation
   }
 }

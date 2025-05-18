@@ -1,8 +1,10 @@
+import { Produit } from "./Produit";
+
 export interface LigneVente {
-  produitId: number;
+  id?: number; // L'ID sera fourni par le backend
+  produit: Produit; // Le backend renvoie l'objet Produit
   quantite: number;
-  prixUnitaire: number; // TTC généralement pour la vente
-  prixTotalLigne: number;
-  // Optionnel: Ajoutez d'autres champs si l'API les requiert ou les retourne
-  // nomMedicament?: string; // Pour affichage facile peut-être?
+  prixVenteTTC: number; // Prix unitaire au moment de la vente pour cette ligne
+  montantTotalLigne: number; // Calculé par le backend
+
 }
