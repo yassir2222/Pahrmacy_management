@@ -110,10 +110,11 @@ export class VenteComponent implements OnInit {
   venteToEdit: Vente | null = null;
   editVenteDialogVisible: boolean = false;
   isSubmittingEditVente: boolean = false;
-  // Injectez les vrais services. VenteService est déjà providedIn: 'root'
-  // Si ProductService et LotService ne sont pas providedIn: 'root', injectez-les ici.
-  // Pour l'instant, on va supposer que VenteService peut charger les produits pour la vente.
-  // Et que la gestion des lots utilise un LotService (ou des appels directs si pas de service dédié).
+  
+
+  panierPourEdition: ProduitPanier[] = [];
+  selectedProduitIdPourEditionPanier?: number;
+  quantitePourProduitEditionPanier: number = 1;
   constructor(
     private fb: FormBuilder,
     private messageService: MessageService,
@@ -261,27 +262,8 @@ export class VenteComponent implements OnInit {
 
   }
 
-   hideEditVenteDialog(): void {
-    this.editVenteDialogVisible = false;
-    this.venteToEdit = null;
-    this.isSubmittingEditVente = false;
-  }
 
-  confirmDeleteVente(vente: Vente): void {
-    this.confirmationService.confirm({
-      message: `Êtes-vous sûr de vouloir supprimer la vente N°${vente.id} du ${new Date(vente.dateVente).toLocaleDateString()} ? Cette action peut affecter les stocks.`,
-      header: 'Confirmation de suppression',
-      icon: 'pi pi-exclamation-triangle',
-      acceptLabel: 'Oui, supprimer',
-      rejectLabel: 'Annuler',
-      accept: () => {
-        this.deleteVente(vente.id); 
-      },
-      reject: () => {
-        this.messageService.add({ severity: 'info', summary: 'Annulé', detail: 'Suppression de la vente annulée.' });
-      }
-    });
-  }
+
 
   openEditVenteDialog(vente: Vente): void {
     this.venteToEdit = JSON.parse(JSON.stringify(vente)); // Create a deep copy
@@ -291,25 +273,7 @@ export class VenteComponent implements OnInit {
     // this.messageService.add({severity: 'info', summary: 'Fonctionnalité en développement', detail: 'L\'édition de vente est complexe.'});
   }
 
-  saveEditedVente(): void {
-    if (!this.venteToEdit) return;
-    this.isSubmittingEditVente = true;
-    // Placeholder: La logique de construction de VenteRequest et l'appel au service iront ici
-    // const venteRequest: VenteRequest = {
-    //   userId: this.venteToEdit.utilisateur?.id, // ou une autre source pour userId
-    //   lignesVente: this.venteToEdit.lignesVente.map(lv => ({
-    //     produitId: lv.produit.id, // Assurez-vous que lv.produit.id est disponible
-    //     quantite: lv.quantite,
-    //     prixUnitaireVenteTTC: lv.prixVenteTTC
-    //   }))
-    // };
 
-    this.messageService.add({severity: 'warn', summary: 'Non implémenté', detail: 'La sauvegarde de la vente modifiée nécessite un endpoint backend.'});
-    console.log("Sauvegarder la vente modifiée (nécessite backend):", this.venteToEdit);
-    // this.venteService.updateVente(this.venteToEdit.id, venteRequest).subscribe({ ... });
-    this.isSubmittingEditVente = false;
-    this.hideEditVenteDialog();
-  }
 
   // --- Méthodes pour l'Historique des Ventes ---
  
@@ -535,21 +499,142 @@ export class VenteComponent implements OnInit {
     return of(`Simulation: Vente ${id} mise à jour (backend non implémenté)`).pipe(delay(500)); // Simulation
   }
 
-  /**
-   * Supprime une vente.
-   * @param id L'ID de la vente à supprimer.
-   * @returns Observable<void | string>
-   * @remarks Nécessite un endpoint DELETE /api/ventes/{id} sur le backend.
-   *          La logique de remise en stock des produits doit être gérée côté backend.
-   */
-  deleteVente(id: number): Observable<void | string> {
-    console.warn(`[VenteService] deleteVente appelé. Backend endpoint DELETEs.`);
-    // Décommentez et adaptez lorsque le backend est prêt
-    // return this.http.delete<void>(`${this.apiUrl}/${id}`)
-    //   .pipe(
-    //     tap(() => console.log(`Vente ${id} supprimée`)),
-    //     catchError(this.handleErrorExtended)
-    //   );
-    return of(`Simulation: Vente ${id} suppretion (backend non implémenté)`).pipe(delay(500)); // Simulation
+ 
+
+ 
+
+  ajouterAuPanierEdition(): void {
+    if (!this.selectedProduitIdPourEditionPanier || this.quantitePourProduitEditionPanier <= 0) {
+      this.messageService.add({ severity: 'warn', summary: 'Attention', detail: 'Sélectionnez un produit et une quantité.' });
+      return;
+    }
+    const produitSource = this.produitsDisponiblesPourVente.find(p => p.id === this.selectedProduitIdPourEditionPanier);
+    if (!produitSource) {
+      this.messageService.add({ severity: 'error', summary: 'Erreur', detail: 'Produit non trouvé.' });
+      return;
+    }
+     // Pour l'édition, la vérification de stock est plus complexe car on modifie une vente existante.
+     // Le backend gère la logique de stock lors de la modification.
+     // On peut toutefois faire une vérification indicative.
+    if (produitSource.prixVenteTTC === null || produitSource.prixVenteTTC === undefined) {
+        this.messageService.add({ severity: 'error', summary: 'Erreur', detail: `Prix de vente non défini pour ${produitSource.nomMedicament}.` });
+        return;
+    }
+
+    const itemExistant = this.panierPourEdition.find(item => item.id === this.selectedProduitIdPourEditionPanier);
+    if (itemExistant) {
+      itemExistant.quantiteAVendre += this.quantitePourProduitEditionPanier;
+    } else {
+      this.panierPourEdition.push({ ...produitSource, quantiteAVendre: this.quantitePourProduitEditionPanier });
+    }
+    this.selectedProduitIdPourEditionPanier = undefined;
+    this.quantitePourProduitEditionPanier = 1;
+  }
+
+  retirerDuPanierEdition(produitId: number): void {
+    this.panierPourEdition = this.panierPourEdition.filter(item => item.id !== produitId);
+  }
+
+  calculerTotalPanierEdition(): number {
+    return this.panierPourEdition.reduce((total, item) => {
+      const prix = item.prixVenteTTC ?? 0;
+      return total + (prix * item.quantiteAVendre);
+    }, 0);
+  }
+
+  saveEditedVente(): void {
+    if (!this.venteToEdit || !this.venteToEdit.id) {
+      this.messageService.add({ severity: 'error', summary: 'Erreur', detail: 'Aucune vente sélectionnée pour la modification.' });
+      return;
+    }
+    if (this.panierPourEdition.length === 0) {
+      this.messageService.add({ severity: 'warn', summary: 'Panier vide', detail: 'Ajoutez des produits à la vente modifiée.' });
+      return;
+    }
+
+    const lignesVenteModifiees: LigneVenteRequest[] = this.panierPourEdition.map(item => {
+      if (item.id === undefined) throw new Error(`ID de produit non défini dans le panier d'édition.`);
+      if (item.prixVenteTTC === null || item.prixVenteTTC === undefined) {
+        throw new Error(`Prix de vente non défini pour le produit ID ${item.id} dans le panier d'édition.`);
+      }
+      return {
+        produitId: item.id,
+        quantite: item.quantiteAVendre,
+        prixUnitaireVenteTTC: item.prixVenteTTC // Utiliser le prix de l'item dans le panier d'édition
+      };
+    });
+
+    // Le VenteRequest backend n'a pas userId, il est inféré ou non modifiable via cet endpoint.
+    const venteRequest: VenteRequest = {
+      lignesVente: lignesVenteModifiees
+    };
+
+    this.isSubmittingEditVente = true;
+    this.venteService.updateVente(this.venteToEdit.id, venteRequest).subscribe({
+      next: (venteModifieeOuMessage) => {
+        if (typeof venteModifieeOuMessage === 'string') {
+            this.messageService.add({ severity: 'error', summary: 'Erreur Modification', detail: venteModifieeOuMessage });
+        } else {
+            this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Vente modifiée avec succès!' });
+            this.hideEditVenteDialog();
+            this.loadHistoriqueVentes();
+            this.loadProduitsDisponiblesPourVente(); // Stocks ont pu changer
+        }
+        this.isSubmittingEditVente = false;
+      },
+      error: (errorMessage) => {
+        this.messageService.add({ severity: 'error', summary: 'Erreur Modification', detail: errorMessage });
+        this.isSubmittingEditVente = false;
+      }
+    });
+  }
+
+  hideEditVenteDialog(): void {
+    this.editVenteDialogVisible = false;
+    this.venteToEdit = null;
+    this.panierPourEdition = [];
+    this.isSubmittingEditVente = false;
+  }
+
+
+   confirmDeleteVente(vente: Vente): void {
+    if (!vente || typeof vente.id !== 'number') {
+        this.messageService.add({ severity: 'error', summary: 'Erreur', detail: 'Données de vente invalides pour la suppression.' });
+        return;
+    }
+    const venteId = vente.id;
+    this.confirmationService.confirm({
+      message: `Êtes-vous sûr de vouloir supprimer la vente N°${venteId} du ${new Date(vente.dateVente).toLocaleDateString()} ? Cette action restituera les stocks.`,
+      header: 'Confirmation de suppression',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Oui, supprimer',
+      rejectLabel: 'Annuler',
+      accept: () => {
+        this.deleteVente(venteId);
+      },
+      reject: () => {
+        this.messageService.add({ severity: 'info', summary: 'Annulé', detail: 'Suppression de la vente annulée.' });
+      }
+    });
+  }
+
+  deleteVente(venteId: number): void {
+    this.isLoadingHistorique = true; // ou un indicateur spécifique
+    this.venteService.deleteVente(venteId).subscribe({
+      next: (response) => { // Peut être void ou un message de succès si le service est adapté
+        if (typeof response === 'string' && response.length > 0) { // Check if backend sent a string message on success
+             this.messageService.add({ severity: 'success', summary: 'Succès', detail: response });
+        } else { // Standard void success
+             this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Vente supprimée avec succès.' });
+        }
+        this.loadProduitsDisponiblesPourVente(); // Refresh stock
+        this.loadHistoriqueVentes(); // Refresh history
+        this.isLoadingHistorique = false;
+      },
+      error: (errorMessage) => {
+        this.messageService.add({ severity: 'error', summary: 'Erreur Suppression', detail: errorMessage });
+        this.isLoadingHistorique = false;
+      }
+    });
   }
 }

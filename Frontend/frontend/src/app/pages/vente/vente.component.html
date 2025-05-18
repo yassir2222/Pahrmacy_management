@@ -19,7 +19,7 @@
                       [style]="{width: '100%'}"
                       [loading]="isLoadingVente && produitsDisponiblesPourVente.length === 0">
             <ng-template let-produit pTemplate="item">
-              <div>{{produit.nomMedicament}} (Stock: {{produit.quantiteTotaleEnStock}}, Prix: {{produit.prixVenteTTC | currency:'EUR'}})</div>
+              <div>{{produit.nomMedicament}} (Stock: {{produit.quantiteTotaleEnStock}}, Prix: {{produit.prixVenteTTC | currency:'DH'}})</div>
             </ng-template>
           </p-dropdown>
         </div>
@@ -46,8 +46,8 @@
           <tr>
             <td>{{item.nomMedicament}}</td>
             <td>{{item.quantiteAVendre}}</td>
-            <td>{{item.prixVenteTTC | currency:'EUR'}}</td>
-            <td>{{(item.prixVenteTTC * item.quantiteAVendre) | currency:'EUR'}}</td>
+            <td>{{item.prixVenteTTC | currency:'DH'}}</td>
+            <td>{{(item.prixVenteTTC * item.quantiteAVendre) | currency:'DH'}}</td>
             <td><p-button icon="pi pi-trash" styleClass="p-button-danger p-button-sm" (click)="retirerDuPanier(item.id)"></p-button></td>
           </tr>
         </ng-template>
@@ -80,20 +80,20 @@
             <th pSortableColumn="dateVente">Date <p-sortIcon field="dateVente"></p-sortIcon></th>
             <th pSortableColumn="montantTotal">Total <p-sortIcon field="montantTotal"></p-sortIcon></th>
             <th>Utilisateur</th>
-            <th>Détails</th>
+            
             <th>Actions</th> <!-- NOUVELLE COLONNE -->
           </tr>
         </ng-template>
-        <ng-template pTemplate="body" let-vente>
+    <ng-template pTemplate="body" let-vente>
           <tr>
-            <td>{{vente.id}}</td>
-            <td>{{vente.dateVente | date:'dd/MM/yyyy HH:mm'}}</td>
-            <td>{{vente.montantTotal | currency:'EUR'}}</td>
-            <td>{{vente.utilisateur?.username || vente.utilisateur?.id || 'N/A'}}</td>
-            <td>
-                <button pButton pRipple type="button" icon="pi pi-eye" class="p-button-rounded p-button-text" (click)="showVenteDetails(vente)" pTooltip="Voir détails" tooltipPosition="top"></button>
+            <td data-label="ID">{{vente.id}}</td>
+            <td data-label="Date">{{vente.dateVente | date:'dd/MM/yyyy HH:mm'}}</td>
+            <td data-label="Total">{{vente.montantTotal | currency:'EUR'}}</td>
+            <!-- <td data-label="Utilisateur">{{vente.utilisateur?.username || vente.utilisateur?.id || 'N/A'}}</td> -->
+            <td data-label="Détails">
+                <button pButton pRipple type="button" icon="pi pi-eye" class="p-button-rounded p-button-text p-button-info" (click)="showVenteDetails(vente)" pTooltip="Voir détails" tooltipPosition="top"></button>
             </td>
-            <td> <!-- NOUVELLES ACTIONS -->
+            <td data-label="Actions">
                 <button pButton pRipple type="button" icon="pi pi-pencil" class="p-button-rounded p-button-warning p-button-text mr-2" (click)="openEditVenteDialog(vente)" pTooltip="Modifier Vente" tooltipPosition="top"></button>
                 <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-rounded p-button-danger p-button-text" (click)="confirmDeleteVente(vente)" pTooltip="Supprimer Vente" tooltipPosition="top"></button>
             </td>
@@ -106,25 +106,70 @@
       </p-table>
     </p-panel>
   </div>
- <p-dialog header="Modifier la Vente" [(visible)]="editVenteDialogVisible" [modal]="true" [style]="{width: '70vw', 'min-width': '400px'}" (onHide)="hideEditVenteDialog()">
+<!-- Dialogue pour Éditer une Vente -->
+<p-dialog header="Modifier la Vente" [(visible)]="editVenteDialogVisible" [modal]="true" [style]="{width: '70vw', 'min-width': '500px'}" (onHide)="hideEditVenteDialog()">
     <ng-template pTemplate="content">
-      <div *ngIf="venteToEdit">
-        <p>Édition de la vente N°{{venteToEdit.id}}.</p>
-        <p class="text-orange-500">Attention: La modification complète des ventes (produits, quantités) est une opération complexe qui nécessite une logique d'interface utilisateur et un support backend robustes pour gérer les impacts sur les stocks et les totaux.</p>
-        <p>Pour l'instant, ce dialogue est un placeholder. Vous devrez implémenter un formulaire ici, potentiellement similaire à la section "Nouvelle Vente", pré-rempli avec les données de `venteToEdit`.</p>
-        
-        <!-- Exemple de champs que vous pourriez vouloir éditer -->
-        <!-- <div class="field">
-          <label for="editVenteUserId">ID Utilisateur (si modifiable)</label>
-          <input pInputText id="editVenteUserId" [(ngModel)]="venteToEdit.utilisateur.id" />
-        </div> -->
-        <!-- Ici, vous auriez une table ou une liste pour les lignes de vente, permettant de modifier les quantités, supprimer des lignes, ajouter de nouveaux produits -->
-      </div>
+        <div *ngIf="venteToEdit">
+            <p>Édition de la vente N°{{venteToEdit.id}} du {{venteToEdit.dateVente | date:'dd/MM/yyyy HH:mm'}}</p>
+            <div class="p-fluid grid mt-3">
+                <div class="field col-12 md:col-6">
+                    <label for="produitEditVenteSelect">Produit</label>
+                    <p-dropdown id="produitEditVenteSelect"
+                                [options]="produitsDisponiblesPourVente"
+                                [(ngModel)]="selectedProduitIdPourEditionPanier"
+                                optionLabel="nomMedicament"
+                                optionValue="id"
+                                placeholder="Sélectionner un produit"
+                                [filter]="true" filterBy="nomMedicament" [showClear]="true"
+                                [style]="{width: '100%'}">
+                        <ng-template let-produit pTemplate="item">
+                            <div>{{produit.nomMedicament}} (Stock: {{produit.quantiteTotaleEnStock}}, Prix: {{produit.prixVenteTTC | currency:'EUR'}})</div>
+                        </ng-template>
+                    </p-dropdown>
+                </div>
+                <div class="field col-12 md:col-4">
+                    <label for="quantiteEditVenteInput">Quantité</label>
+                    <p-inputNumber id="quantiteEditVenteInput" [(ngModel)]="quantitePourProduitEditionPanier" [min]="1" [showButtons]="true"></p-inputNumber>
+                </div>
+                <div class="field col-12 md:col-2 align-self-end">
+                    <p-button label="Ajouter" icon="pi pi-plus" (click)="ajouterAuPanierEdition()" [disabled]="!selectedProduitIdPourEditionPanier || quantitePourProduitEditionPanier <= 0"></p-button>
+                </div>
+            </div>
+
+            <h5 class="mt-4">Panier d'Édition</h5>
+            <div *ngIf="panierPourEdition.length === 0" class="text-center my-3">Le panier d'édition est vide.</div>
+            <p-table *ngIf="panierPourEdition.length > 0" [value]="panierPourEdition" styleClass="p-datatable-sm">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th>Produit</th>
+                        <th>Qté</th>
+                        <th>Prix Unit.</th>
+                        <th>Sous-total</th>
+                        <th>Action</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-item>
+                    <tr>
+                        <td>{{item.nomMedicament}}</td>
+                        <td>{{item.quantiteAVendre}}</td>
+                        <td>{{item.prixVenteTTC | currency:'EUR'}}</td>
+                        <td>{{(item.prixVenteTTC * item.quantiteAVendre) | currency:'DH'}}</td>
+                        <td><p-button icon="pi pi-trash" styleClass="p-button-danger p-button-sm" (click)="retirerDuPanierEdition(item.id)"></p-button></td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="footer">
+                    <tr>
+                        <td colspan="3" class="text-right"><strong>Total Modifié:</strong></td>
+                        <td colspan="2"><strong>{{calculerTotalPanierEdition() | currency:'DH'}}</strong></td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        </div>
     </ng-template>
     <ng-template pTemplate="footer">
-      <p-button label="Annuler" icon="pi pi-times" (click)="hideEditVenteDialog()" styleClass="p-button-text"></p-button>
-      <p-button label="Sauvegarder Modifications" icon="pi pi-check" (click)="saveEditedVente()" [loading]="isSubmittingEditVente" styleClass="p-button-success"></p-button>
+        <p-button label="Annuler" icon="pi pi-times" (click)="hideEditVenteDialog()" styleClass="p-button-text"></p-button>
+        <p-button label="Sauvegarder Modifications" icon="pi pi-check" (click)="saveEditedVente()" [loading]="isSubmittingEditVente" styleClass="p-button-success" [disabled]="panierPourEdition.length === 0"></p-button>
     </ng-template>
-  </p-dialog>
+</p-dialog>
 
   </div>

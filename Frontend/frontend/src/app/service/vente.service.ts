@@ -66,40 +66,61 @@ export class VenteService {
       );
   }
 
+ /**
+   * Met à jour une vente existante.
+   */
+  updateVente(id: number, venteRequest: VenteRequest): Observable<Vente | string> {
+    const httpOptions = {
+      headers: new HttpHeaders({ 'Content-Type': 'application/json' })
+    };
+    return this.http.put<Vente>(`${this.apiUrl}/${id}`, venteRequest, httpOptions)
+      .pipe(
+        tap(data => console.log('Vente mise à jour:', data)),
+        catchError(this.handleErrorExtended)
+      );
+  }
+
+  /**
+   * Supprime une vente.
+   */
+  deleteVente(id: number): Observable<void | string> { // Backend returns 204 No Content (void) or error string
+    return this.http.delete<void>(`${this.apiUrl}/${id}`) // HTTP DELETE ne renvoie généralement pas de corps pour void
+      .pipe(
+        tap(() => console.log(`Vente ${id} supprimée`)),
+        catchError(this.handleErrorExtended) // handleErrorExtended peut gérer les erreurs textuelles
+      );
+  }
+
   private handleErrorExtended(error: HttpErrorResponse): Observable<never | string> {
     let errorMessage = 'Une erreur inconnue est survenue!';
     if (error.error instanceof ErrorEvent) {
-      // Erreur côté client
       errorMessage = `Erreur: ${error.error.message}`;
     } else {
-      // Erreur côté serveur
-      if (error.status === 400 && typeof error.error === 'string') {
-        // Cas où le backend renvoie directement le message d'erreur pour les bad requests
-        return throwError(() => error.error);
-      }
-      errorMessage = `Code d'erreur ${error.status}: ${error.message || error.statusText}`;
-      if (error.error && typeof error.error === 'string' && error.status !== 400) {
+      if (error.status === 0) {
+        errorMessage = 'Impossible de contacter le serveur. Vérifiez votre connexion ou la disponibilité du backend.';
+      } else if (typeof error.error === 'string' && error.error.trim() !== '') {
+        // Si le corps de l'erreur est une chaîne (souvent le cas pour les badRequest du backend)
         errorMessage = error.error;
-      } else if (error.error && error.error.message) {
-        errorMessage = error.error.message;
+      } else {
+        errorMessage = `Code d'erreur ${error.status}: ${error.statusText || 'Erreur serveur'}`;
       }
     }
-    console.error(errorMessage);
-    return throwError(() => errorMessage); // Retourne le message d'erreur
+    console.error('Erreur détaillée du service:', error); // Log l'objet erreur complet
+    console.error('Message d\'erreur traité:', errorMessage);
+    return throwError(() => errorMessage);
   }
 
   private handleError(error: HttpErrorResponse) {
-    // ... (votre gestionnaire d'erreur actuel peut être conservé ici s'il ne gère pas le retour de string)
-    // Pour simplifier, j'utilise le même que handleErrorExtended mais qui ne retourne que 'never'
     let errorMessage = 'Une erreur inconnue est survenue!';
     if (error.error instanceof ErrorEvent) {
       errorMessage = `Erreur: ${error.error.message}`;
     } else {
-      errorMessage = `Code d'erreur ${error.status}: ${error.message || error.statusText}`;
-       if (error.error && typeof error.error === 'string') {
+      if (error.status === 0) {
+        errorMessage = 'Impossible de contacter le serveur.';
+      } else if (typeof error.error === 'string' && error.error.trim() !== '') {
         errorMessage = error.error;
-      } else if (error.error && error.error.message) {
-        errorMessage = error.error.message;
+      } else {
+        errorMessage = `Code d'erreur ${error.status}: ${error.statusText || 'Erreur serveur'}`;
       }
     }
     console.error(errorMessage);

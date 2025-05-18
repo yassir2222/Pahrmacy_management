@@ -103,4 +103,10 @@ public class LigneVente {
     public void setDateExpiration(LocalDate dateExpiration) {
         this.dateExpiration = dateExpiration;
     }
+    public Long getProduitId() {
+        if (this.produit != null) {
+            return this.produit.getId();
+        }
+        return null; // Or handle as an error if produit should never be null here
+    }
 }

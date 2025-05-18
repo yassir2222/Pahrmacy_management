@@ -5,7 +5,10 @@ import emsi.project.backendms1.dtos.VenteRequest;
 import emsi.project.backendms1.models.Vente;
 import emsi.project.backendms1.service.VenteService;
 
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.actuate.logging.LoggersEndpoint;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,6 +23,8 @@ public class VenteController {
 
     @Autowired
     private VenteService venteService;
+    @Autowired
+    private LoggersEndpoint loggersEndpoint;
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ROLE_USER')")
@@ -51,6 +56,33 @@ public class VenteController {
             return ResponseEntity.noContent().build();
         }
         return ResponseEntity.ok(ventes);
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ROLE_USER')")
+    public ResponseEntity<?> modifierVente(@PathVariable Long id, @RequestBody VenteRequest venteRequest) {
+        try {
+            Vente venteModifiee = venteService.modifierVente(id, venteRequest);
+            return ResponseEntity.ok(venteModifiee);
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Une erreur interne est survenue lors de la modification de la vente.");
+        }
+    }
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ROLE_USER')")
+    public ResponseEntity<?> supprimerVente(@PathVariable Long id) {
+        try {
+            venteService.supprimerVente(id);
+            return ResponseEntity.noContent().build();
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Une erreur interne est survenue lors de la suppression de la vente.");
+        }
     }
 
 }

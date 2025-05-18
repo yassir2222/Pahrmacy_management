@@ -144,4 +144,29 @@ public class StockService {
         updateProductTotalStock(produitId);
     }
 
+
+    @Transactional
+    public void restituerStockAuxLots(Long produitId, int quantiteARestituer) {
+        if (quantiteARestituer <= 0) {
+            return;
+        }
+
+        // On cherche un lot pour ce produit, de préférence celui qui expire le plus tard.
+        List<LotDeStock> lots = stockLotRepository.findByProduitIdOrderByDateExpirationDesc(produitId);
+
+        if (lots.isEmpty()) {
+            Produit produit = productRepository.findById(produitId)
+                    .orElseThrow(() -> new EntityNotFoundException("Produit non trouvé: " + produitId + " lors de la tentative de restitution de stock à un lot inexistant."));
+            throw new IllegalStateException("Impossible de restituer le stock pour le produit '" + produit.getNomMedicament() + "' (ID: " + produitId + ") car aucun lot de stock n'est associé à ce produit. Veuillez vérifier les données.");
+        }
+
+        // Ajouter la quantité au lot qui expire le plus tard (premier de la liste triée DESC)
+        LotDeStock lotPourRestitution = lots.get(0);
+        lotPourRestitution.setQuantite(lotPourRestitution.getQuantite() + quantiteARestituer);
+        stockLotRepository.save(lotPourRestitution);
+
+        // Mettre à jour le stock total du produit (basé sur la somme des quantités des lots)
+        updateProductTotalStock(produitId);
+    }
+
 }
